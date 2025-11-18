@@ -1,0 +1,626 @@
+#!/bin/sh
+# Copyright 2025 - Nym Technologies SA <contact@nymtech.net>
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# rpcd backend for nym-vpn LuCI interface
+
+. /usr/share/libubox/jshn.sh
+
+VPNC="/usr/bin/nym-vpnc"
+
+case "$1" in
+    list)
+        cat <<EOF
+{
+    "status": {},
+    "connect": {},
+    "disconnect": {},
+    "info": {},
+    "gateway_get": {},
+    "gateway_set": {
+        "entry_country": "str",
+        "exit_country": "str",
+        "entry_id": "str",
+        "exit_id": "str",
+        "entry_random": "bool",
+        "exit_random": "bool",
+        "residential_exit": "bool"
+    },
+    "gateway_list": {
+        "gateway_type": "str"
+    },
+    "gateway_list_countries": {
+        "gateway_type": "str"
+    },
+    "gateway_list_by_country": {
+        "gateway_type": "str",
+        "country_code": "str"
+    },
+    "tunnel_get": {},
+    "tunnel_set": {
+        "ipv6": "str",
+        "two_hop": "str"
+    },
+    "account_get": {},
+    "account_set": {
+        "mnemonic": "str",
+        "mode": "str"
+    },
+    "account_forget": {},
+    "account_rotate_keys": {},
+    "network_get": {},
+    "network_set": {
+        "network": "str"
+    },
+    "lan_get": {},
+    "lan_set": {
+        "policy": "str"
+    }
+}
+EOF
+        ;;
+    call)
+        case "$2" in
+            status)
+                # Get current tunnel state
+                state=$($VPNC status 2>&1)
+
+                json_init
+
+                # Parse the state output
+                if echo "$state" | grep -q "State: Connected"; then
+                    json_add_string "state" "connected"
+                    json_add_boolean "connected" 1
+
+                    # Detect mode (mix or wg)
+                    if echo "$state" | grep -q "Connected mix"; then
+                        json_add_string "mode" "mixnet"
+                        # Format: "State: Connected mix to ENTRY_IP [ENTRY_ID] → EXIT_IP [EXIT_ID]"
+                        # Extract entry part (before →) and exit part (after →)
+                        entry_part=$(echo "$state" | sed -n 's/.*Connected mix to \([^→]*\)→.*/\1/p')
+                        exit_part=$(echo "$state" | sed -n 's/.*→ \(.*\)/\1/p')
+
+                        entry_ip=$(echo "$entry_part" | sed -n 's/\([0-9.]*\).*/\1/p')
+                        entry_id=$(echo "$entry_part" | sed -n 's/.*\[\([^]]*\)\].*/\1/p')
+                        exit_ip=$(echo "$exit_part" | sed -n 's/\([0-9.]*\).*/\1/p')
+                        exit_id=$(echo "$exit_part" | sed -n 's/.*\[\([^]]*\)\].*/\1/p')
+                    elif echo "$state" | grep -q "Connected wg"; then
+                        json_add_string "mode" "wireguard"
+                        # Format: "State: Connected wg to ENTRY_IP:PORT [ENTRY_ID] → EXIT_IP:PORT [EXIT_ID]"
+                        # Extract entry part (before →) and exit part (after →)
+                        entry_part=$(echo "$state" | sed -n 's/.*Connected wg to \([^→]*\)→.*/\1/p')
+                        exit_part=$(echo "$state" | sed -n 's/.*→ \(.*\)/\1/p')
+
+                        entry_ip=$(echo "$entry_part" | sed -n 's/\([0-9.]*\):.*/\1/p')
+                        entry_id=$(echo "$entry_part" | sed -n 's/.*\[\([^]]*\)\].*/\1/p')
+                        exit_ip=$(echo "$exit_part" | sed -n 's/\([0-9.]*\):.*/\1/p')
+                        exit_id=$(echo "$exit_part" | sed -n 's/.*\[\([^]]*\)\].*/\1/p')
+                    fi
+
+                    [ -n "$entry_ip" ] && json_add_string "entry_ip" "$entry_ip"
+                    [ -n "$entry_id" ] && json_add_string "entry_id" "$entry_id"
+                    [ -n "$exit_ip" ] && json_add_string "exit_ip" "$exit_ip"
+                    [ -n "$exit_id" ] && json_add_string "exit_id" "$exit_id"
+
+                    # Create readable entry/exit strings with IP and ID
+                    if [ -n "$entry_ip" ] && [ -n "$entry_id" ]; then
+                        json_add_string "entry_gateway" "$entry_ip [$entry_id]"
+                    elif [ -n "$entry_ip" ]; then
+                        json_add_string "entry_gateway" "$entry_ip"
+                    fi
+                    if [ -n "$exit_ip" ] && [ -n "$exit_id" ]; then
+                        json_add_string "exit_gateway" "$exit_ip [$exit_id]"
+                    elif [ -n "$exit_ip" ]; then
+                        json_add_string "exit_gateway" "$exit_ip"
+                    fi
+                elif echo "$state" | grep -q "State: Disconnected"; then
+                    json_add_string "state" "disconnected"
+                    json_add_boolean "connected" 0
+                elif echo "$state" | grep -q "State: Connecting"; then
+                    json_add_string "state" "connecting"
+                    json_add_boolean "connected" 0
+                    json_add_string "raw_state" "$state"
+                elif echo "$state" | grep -q "State: Disconnecting"; then
+                    json_add_string "state" "disconnecting"
+                    json_add_boolean "connected" 0
+                else
+                    json_add_string "state" "unknown"
+                    json_add_boolean "connected" 0
+                    json_add_string "raw_state" "$state"
+                fi
+
+                json_dump
+                ;;
+
+            connect)
+                # Connect without wait - UI will poll status
+                result=$($VPNC connect-v2 2>&1)
+                ret=$?
+
+                json_init
+                if [ $ret -eq 0 ]; then
+                    json_add_boolean "success" 1
+                    json_add_string "message" "Connection initiated"
+                else
+                    json_add_boolean "success" 0
+                    json_add_string "error" "$result"
+                fi
+                json_dump
+                ;;
+
+            disconnect)
+                result=$($VPNC disconnect 2>&1)
+                ret=$?
+
+                json_init
+                if [ $ret -eq 0 ]; then
+                    json_add_boolean "success" 1
+                    json_add_string "message" "Disconnected successfully"
+                else
+                    json_add_boolean "success" 0
+                    json_add_string "error" "$result"
+                fi
+                json_dump
+                ;;
+
+            info)
+                # Get service info
+                info=$($VPNC info 2>&1)
+
+                json_init
+
+                # Extract version
+                version=$(echo "$info" | grep "version:" | head -1 | sed 's/.*version: //')
+                [ -n "$version" ] && json_add_string "version" "$version"
+
+                # Extract network name
+                network=$(echo "$info" | grep "network_name:" | sed 's/.*network_name: //')
+                [ -n "$network" ] && json_add_string "network" "$network"
+
+                # Add raw info for debugging
+                json_add_string "raw_info" "$info"
+
+                json_dump
+                ;;
+
+            gateway_get)
+                # Get current gateway configuration
+                config=$($VPNC gateway get 2>&1)
+
+                json_init
+
+                # Parse entry and exit points
+                entry=$(echo "$config" | grep "Entry point:" | sed 's/Entry point: //')
+                exit=$(echo "$config" | grep "Exit point:" | sed 's/Exit point: //')
+                residential=$(echo "$config" | grep "Residential exit:" | sed 's/Residential exit: //')
+
+                # Format country selections nicely
+                # Convert "Country { two_letter_iso_country_code: "US" }" to "Random [US]"
+                if echo "$entry" | grep -q "two_letter_iso_country_code"; then
+                    entry_code=$(echo "$entry" | sed -n 's/.*two_letter_iso_country_code: "\([A-Z][A-Z]\)".*/\1/p')
+                    entry="Random [$entry_code]"
+                fi
+                if echo "$exit" | grep -q "two_letter_iso_country_code"; then
+                    exit_code=$(echo "$exit" | sed -n 's/.*two_letter_iso_country_code: "\([A-Z][A-Z]\)".*/\1/p')
+                    exit="Random [$exit_code]"
+                fi
+
+                # Format gateway identity selections
+                # Convert "Gateway { identity: NodeIdentity { key: "..." } }" to just the key
+                if echo "$entry" | grep -q "NodeIdentity"; then
+                    entry_key=$(echo "$entry" | sed -n 's/.*key: "\([^"]*\)".*/\1/p')
+                    entry="$entry_key"
+                fi
+                if echo "$exit" | grep -q "NodeIdentity"; then
+                    exit_key=$(echo "$exit" | sed -n 's/.*key: "\([^"]*\)".*/\1/p')
+                    exit="$exit_key"
+                fi
+
+                json_add_string "entry_point" "$entry"
+                json_add_string "exit_point" "$exit"
+                json_add_string "residential_exit" "$residential"
+
+                json_dump
+                ;;
+
+            gateway_set)
+                read input
+                json_load "$input"
+
+                args=""
+
+                # Build command arguments - prioritize ID over country
+                json_get_var entry_id entry_id
+                if [ -n "$entry_id" ]; then
+                    args="$args --entry-id $entry_id"
+                else
+                    json_get_var entry_country entry_country
+                    [ -n "$entry_country" ] && args="$args --entry-country $entry_country"
+                fi
+
+                json_get_var exit_id exit_id
+                if [ -n "$exit_id" ]; then
+                    args="$args --exit-id $exit_id"
+                else
+                    json_get_var exit_country exit_country
+                    [ -n "$exit_country" ] && args="$args --exit-country $exit_country"
+                fi
+
+                json_get_var entry_random entry_random
+                [ "$entry_random" = "1" -o "$entry_random" = "true" ] && args="$args --entry-random"
+
+                json_get_var exit_random exit_random
+                [ "$exit_random" = "1" -o "$exit_random" = "true" ] && args="$args --exit-random"
+
+                json_get_var residential_exit residential_exit
+                [ -n "$residential_exit" ] && args="$args --residential-exit $residential_exit"
+
+                if [ -n "$args" ]; then
+                    result=$($VPNC gateway set $args 2>&1)
+                    ret=$?
+                else
+                    result="No gateway parameters specified"
+                    ret=1
+                fi
+
+                json_init
+                if [ $ret -eq 0 ]; then
+                    json_add_boolean "success" 1
+                    json_add_string "message" "Gateway configuration updated"
+                else
+                    json_add_boolean "success" 0
+                    json_add_string "error" "$result"
+                fi
+                json_dump
+                ;;
+
+            gateway_list)
+                read input
+                json_load "$input"
+                json_get_var gw_type gateway_type
+
+                # Default to mixnet-exit if not specified
+                [ -z "$gw_type" ] && gw_type="mixnet-exit"
+
+                result=$($VPNC gateway list "$gw_type" 2>&1)
+
+                json_init
+                json_add_string "gateways" "$result"
+                json_dump
+                ;;
+
+            gateway_list_countries)
+                read input
+                json_load "$input"
+                json_get_var gw_type gateway_type
+
+                # Default to mixnet-exit if not specified
+                [ -z "$gw_type" ] && gw_type="mixnet-exit"
+
+                # Get gateway list ONCE and cache it
+                full_list=$($VPNC gateway list "$gw_type" 2>&1)
+
+                # Extract unique country codes using sed (busybox compatible)
+                # Match [XX] pattern where XX is two uppercase letters
+                countries=$(echo "$full_list" | sed -n 's/.*\[\([A-Z][A-Z]\)\].*/\1/p' | sort -u)
+
+                json_init
+                json_add_array "countries"
+
+                for country in $countries; do
+                    # Count gateways for this country from cached list
+                    count=$(echo "$full_list" | grep -c "\[$country\]" || echo "0")
+
+                    json_add_object
+                    json_add_string "code" "$country"
+                    json_add_int "count" "$count"
+                    json_close_object
+                done
+
+                json_close_array
+                json_dump
+                ;;
+
+            gateway_list_by_country)
+                read input
+                json_load "$input"
+                json_get_var gw_type gateway_type
+                json_get_var country country_code
+
+                # Default to mixnet-exit if not specified
+                [ -z "$gw_type" ] && gw_type="mixnet-exit"
+
+                if [ -z "$country" ]; then
+                    json_init
+                    json_add_boolean "success" 0
+                    json_add_string "error" "Country code required"
+                    json_dump
+                    return
+                fi
+
+                # Get full gateway list and filter by country
+                result=$($VPNC gateway list "$gw_type" 2>&1 | grep "\[$country\]")
+
+                json_init
+                json_add_array "gateways"
+
+                # Parse each gateway line (using while with input redirection to avoid subshell)
+                # Note: Some gateway names contain pipe characters, so we parse carefully
+                while IFS= read -r line; do
+                    # Skip empty lines and header lines
+                    [ -z "$line" ] && continue
+                    echo "$line" | grep -qi "^ID" && continue
+                    echo "$line" | grep -qi "^[-=]" && continue
+
+                    # Extract ID (first field, always before first |)
+                    id=$(echo "$line" | awk -F'|' '{print $1}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+                    # Validate ID length (gateway IDs are ~44 chars)
+                    [ -z "$id" ] || [ ${#id} -lt 30 ] && continue
+
+                    # Remove the ID and first pipe from the line
+                    rest="${line#*|}"
+
+                    # Extract performance - it's the field that starts with High/Medium/Low/Offline
+                    # Work backwards: last field is version, before that is IPv6, before that is IPv4, before that is performance
+                    # Count pipes and get 4th field from the end
+                    num_fields=$(echo "$rest" | awk -F'|' '{print NF}')
+                    if [ "$num_fields" -ge 4 ]; then
+                        perf_field=$((num_fields - 3))
+                        performance=$(echo "$rest" | awk -F'|' -v field="$perf_field" '{print $field}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                    else
+                        performance="Unknown"
+                    fi
+
+                    # Extract location - contains [XX] country code
+                    # It's the field before performance
+                    if [ "$num_fields" -ge 5 ]; then
+                        loc_field=$((num_fields - 4))
+                        location=$(echo "$rest" | awk -F'|' -v field="$loc_field" '{print $field}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                    else
+                        location="Unknown"
+                    fi
+
+                    # Everything between ID and location is the name (may contain pipes)
+                    # Get all fields from 1 to loc_field-1 and join them with |
+                    if [ "$num_fields" -ge 5 ]; then
+                        max_name_field=$((loc_field - 1))
+                        if [ "$max_name_field" -eq 1 ]; then
+                            name=$(echo "$rest" | awk -F'|' '{print $1}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                        else
+                            name=$(echo "$rest" | awk -F'|' -v max="$max_name_field" '{for(i=1;i<=max;i++){printf "%s%s", $i, (i<max?"|":"")} }' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                        fi
+                    else
+                        name="Unknown"
+                    fi
+
+                    # Output the parsed gateway
+                    json_add_object
+                    json_add_string "id" "$id"
+                    json_add_string "name" "${name:-Unknown}"
+                    json_add_string "location" "${location:-Unknown}"
+                    json_add_string "performance" "${performance:-Unknown}"
+                    json_close_object
+                done <<EOF
+$result
+EOF
+
+                json_close_array
+                json_dump
+                ;;
+
+            tunnel_get)
+                config=$($VPNC tunnel get 2>&1)
+
+                json_init
+
+                # Parse tunnel configuration (note: fields use hyphens)
+                ipv6=$(echo "$config" | grep "IPv6:" | sed 's/.*IPv6: //')
+                two_hop=$(echo "$config" | grep "Two-hop:" | sed 's/.*Two-hop: //')
+                netstack=$(echo "$config" | grep "Netstack:" | sed 's/.*Netstack: //')
+                circumvention=$(echo "$config" | grep "Circumvention transports:" | sed 's/.*Circumvention transports: //')
+
+                json_add_string "ipv6" "$ipv6"
+                json_add_string "two_hop" "$two_hop"
+                json_add_string "netstack" "$netstack"
+                json_add_string "circumvention_transports" "$circumvention"
+                json_add_string "raw_config" "$config"
+
+                json_dump
+                ;;
+
+            tunnel_set)
+                read input
+                json_load "$input"
+
+                args=""
+
+                json_get_var ipv6 ipv6
+                [ -n "$ipv6" ] && args="$args --ipv6 $ipv6"
+
+                json_get_var two_hop two_hop
+                [ -n "$two_hop" ] && args="$args --two-hop $two_hop"
+
+                if [ -n "$args" ]; then
+                    result=$($VPNC tunnel set $args 2>&1)
+                    ret=$?
+                else
+                    result="No tunnel parameters specified"
+                    ret=1
+                fi
+
+                json_init
+                if [ $ret -eq 0 ]; then
+                    json_add_boolean "success" 1
+                    json_add_string "message" "Tunnel configuration updated"
+
+                    # Fetch updated config and include it in response
+                    updated_config=$($VPNC tunnel get 2>&1)
+                    ipv6_new=$(echo "$updated_config" | grep "IPv6:" | sed 's/.*IPv6: //')
+                    two_hop_new=$(echo "$updated_config" | grep "Two-hop:" | sed 's/.*Two-hop: //')
+                    netstack_new=$(echo "$updated_config" | grep "Netstack:" | sed 's/.*Netstack: //')
+                    circumvention_new=$(echo "$updated_config" | grep "Circumvention transports:" | sed 's/.*Circumvention transports: //')
+
+                    json_add_object "config"
+                    json_add_string "ipv6" "$ipv6_new"
+                    json_add_string "two_hop" "$two_hop_new"
+                    json_add_string "netstack" "$netstack_new"
+                    json_add_string "circumvention_transports" "$circumvention_new"
+                    json_close_object
+                else
+                    json_add_boolean "success" 0
+                    json_add_string "error" "$result"
+                fi
+                json_dump
+                ;;
+
+            account_get)
+                info=$($VPNC account get 2>&1)
+
+                json_init
+
+                # Parse account info
+                identity=$(echo "$info" | grep "Account identity:" | sed 's/Account identity: //')
+                state=$(echo "$info" | grep "Account state:" | sed 's/Account state: //')
+
+                json_add_string "identity" "$identity"
+                json_add_string "state" "$state"
+                json_add_string "raw_info" "$info"
+
+                json_dump
+                ;;
+
+            account_set)
+                read input
+                json_load "$input"
+                json_get_var mnemonic mnemonic
+                json_get_var mode mode
+
+                # Default to api mode
+                [ -z "$mode" ] && mode="api"
+
+                if [ -n "$mnemonic" ]; then
+                    result=$($VPNC account set "$mnemonic" --mode "$mode" 2>&1)
+                    ret=$?
+                else
+                    result="Mnemonic required"
+                    ret=1
+                fi
+
+                json_init
+                if [ $ret -eq 0 ]; then
+                    json_add_boolean "success" 1
+                    json_add_string "message" "Account set successfully"
+                else
+                    json_add_boolean "success" 0
+                    json_add_string "error" "$result"
+                fi
+                json_dump
+                ;;
+
+            account_forget)
+                result=$($VPNC account forget 2>&1)
+                ret=$?
+
+                json_init
+                if [ $ret -eq 0 ]; then
+                    json_add_boolean "success" 1
+                    json_add_string "message" "Account forgotten"
+                else
+                    json_add_boolean "success" 0
+                    json_add_string "error" "$result"
+                fi
+                json_dump
+                ;;
+
+            account_rotate_keys)
+                result=$($VPNC account rotate-keys 2>&1)
+                ret=$?
+
+                json_init
+                if [ $ret -eq 0 ]; then
+                    json_add_boolean "success" 1
+                    json_add_string "message" "Keys rotated successfully"
+                else
+                    json_add_boolean "success" 0
+                    json_add_string "error" "$result"
+                fi
+                json_dump
+                ;;
+
+            network_get)
+                config=$($VPNC network get 2>&1)
+
+                # Strip "Current network: " prefix if present
+                network=$(echo "$config" | sed 's/Current network: //')
+
+                json_init
+                json_add_string "network" "$network"
+                json_dump
+                ;;
+
+            network_set)
+                read input
+                json_load "$input"
+                json_get_var network network
+
+                if [ -n "$network" ]; then
+                    result=$($VPNC network set "$network" 2>&1)
+                    ret=$?
+                else
+                    result="Network name required"
+                    ret=1
+                fi
+
+                json_init
+                if [ $ret -eq 0 ]; then
+                    json_add_boolean "success" 1
+                    json_add_string "message" "Network set to $network"
+                else
+                    json_add_boolean "success" 0
+                    json_add_string "error" "$result"
+                fi
+                json_dump
+                ;;
+
+            lan_get)
+                policy=$($VPNC lan get 2>&1)
+
+                json_init
+                json_add_string "policy" "$policy"
+                json_dump
+                ;;
+
+            lan_set)
+                read input
+                json_load "$input"
+                json_get_var policy policy
+
+                if [ -n "$policy" ]; then
+                    result=$($VPNC lan set "$policy" 2>&1)
+                    ret=$?
+                else
+                    result="Policy required (allow or block)"
+                    ret=1
+                fi
+
+                json_init
+                if [ $ret -eq 0 ]; then
+                    json_add_boolean "success" 1
+                    json_add_string "message" "LAN policy set to $policy"
+                else
+                    json_add_boolean "success" 0
+                    json_add_string "error" "$result"
+                fi
+                json_dump
+                ;;
+
+            *)
+                json_init
+                json_add_boolean "success" 0
+                json_add_string "error" "Unknown method: $2"
+                json_dump
+                ;;
+        esac
+        ;;
+esac
