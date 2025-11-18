@@ -1,4 +1,4 @@
-# luci-app-nym-vpn
+# nym-vpn-luci
 
 LuCI web interface for Nym VPN on OpenWRT.
 
@@ -74,9 +74,3 @@ rm -rf /tmp/luci-modulecache/* /tmp/luci-indexcache*
 /etc/init.d/rpcd restart
 ```
 
-## License
-
-GPL-3.0-only
-
-Copyright 2025 Nym Technologies SA
-# nym-vpn-luci
