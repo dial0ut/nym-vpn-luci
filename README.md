@@ -79,3 +79,4 @@ rm -rf /tmp/luci-modulecache/* /tmp/luci-indexcache*
 GPL-3.0-only
 
 Copyright 2025 Nym Technologies SA
+# nym-vpn-luci

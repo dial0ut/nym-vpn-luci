@@ -160,6 +160,83 @@ return view.extend({
         var connectBtn;
         var disconnectBtn;
 
+        // Uptime tracking with localStorage persistence
+        var connectionStartTime = null;
+        var uptimeInterval = null;
+        var uptimeDisplay = null;
+        var UPTIME_STORAGE_KEY = 'nym_vpn_connection_start';
+
+        var formatUptime = function(seconds) {
+            var hours = Math.floor(seconds / 3600);
+            var minutes = Math.floor((seconds % 3600) / 60);
+            var secs = seconds % 60;
+
+            if (hours > 0) {
+                return hours + 'h ' + minutes + 'm ' + secs + 's';
+            } else if (minutes > 0) {
+                return minutes + 'm ' + secs + 's';
+            } else {
+                return secs + 's';
+            }
+        };
+
+        var startUptimeTimer = function(existingStartTime) {
+            if (uptimeInterval) {
+                clearInterval(uptimeInterval);
+            }
+
+            // Use existing start time or create new one
+            if (existingStartTime) {
+                connectionStartTime = existingStartTime;
+            } else {
+                connectionStartTime = Date.now();
+                // Persist to localStorage
+                try {
+                    localStorage.setItem(UPTIME_STORAGE_KEY, connectionStartTime.toString());
+                } catch (e) {
+                    console.warn('Could not save connection time to localStorage:', e);
+                }
+            }
+
+            uptimeInterval = setInterval(function() {
+                if (uptimeDisplay && connectionStartTime) {
+                    var elapsed = Math.floor((Date.now() - connectionStartTime) / 1000);
+                    uptimeDisplay.textContent = formatUptime(elapsed);
+                }
+            }, 1000);
+        };
+
+        var stopUptimeTimer = function() {
+            if (uptimeInterval) {
+                clearInterval(uptimeInterval);
+                uptimeInterval = null;
+            }
+            connectionStartTime = null;
+
+            // Clear from localStorage
+            try {
+                localStorage.removeItem(UPTIME_STORAGE_KEY);
+            } catch (e) {
+                console.warn('Could not clear connection time from localStorage:', e);
+            }
+
+            if (uptimeDisplay) {
+                uptimeDisplay.textContent = '-';
+            }
+        };
+
+        var getStoredStartTime = function() {
+            try {
+                var stored = localStorage.getItem(UPTIME_STORAGE_KEY);
+                if (stored) {
+                    return parseInt(stored, 10);
+                }
+            } catch (e) {
+                console.warn('Could not read connection time from localStorage:', e);
+            }
+            return null;
+        };
+
         // Gateway selection elements
         var entryGatewaySelectContainer;
         var exitGatewaySelectContainer;
@@ -210,15 +287,25 @@ return view.extend({
                 if (state === 'connected') {
                     color = 'green';
                     displayState = 'Connected';
+                    // Start timer if not already running
+                    if (!connectionStartTime) {
+                        var storedTime = getStoredStartTime();
+                        startUptimeTimer(storedTime || null);
+                    }
                 } else if (state === 'disconnected') {
                     color = 'red';
                     displayState = 'Disconnected';
+                    stopUptimeTimer();
                 } else if (state === 'connecting') {
                     color = 'orange';
                     displayState = 'Connecting...';
+                    stopUptimeTimer();
                 } else if (state === 'disconnecting') {
                     color = 'orange';
                     displayState = 'Disconnecting...';
+                    // Keep timer running during disconnect
+                } else {
+                    stopUptimeTimer();
                 }
 
                 if (statusText) {
@@ -813,6 +900,12 @@ return view.extend({
                         ])
                     ]),
                     E('div', { 'class': 'tr' }, [
+                        E('div', { 'class': 'td left' }, _('Uptime:')),
+                        E('div', { 'class': 'td left' }, [
+                            uptimeDisplay = E('span', { 'id': 'vpn-uptime' }, '-')
+                        ])
+                    ]),
+                    E('div', { 'class': 'tr' }, [
                         E('div', { 'class': 'td left' }, _('Version:')),
                         E('div', { 'class': 'td left' }, info.version || 'Unknown')
                     ]),
@@ -1109,6 +1202,23 @@ return view.extend({
         // Initial status update
         updateStatus();
         updateGatewayDisplay();
+
+        // Start uptime timer if already connected on page load
+        if (status.state === 'connected') {
+            var storedTime = getStoredStartTime();
+            if (storedTime) {
+                // Resume with stored start time
+                startUptimeTimer(storedTime);
+            } else {
+                // No stored time, start fresh (connection was made before we added this feature)
+                startUptimeTimer();
+            }
+        } else {
+            // Not connected, clear any stale localStorage data
+            try {
+                localStorage.removeItem(UPTIME_STORAGE_KEY);
+            } catch (e) {}
+        }
 
         // Poll for status updates every 5 seconds
         poll.add(updateStatus, 5);
