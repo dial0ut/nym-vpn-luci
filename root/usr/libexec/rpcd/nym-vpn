@@ -88,6 +88,25 @@ validate_input() {
 # RPC method handlers
 #-------------------------------------------------------------------------------
 
+lookup_gateway_name() {
+    local gw_id="$1"
+    local gw_type="$2"
+    [ -z "$gw_id" ] && return
+
+    local name=$($VPNC gateway list "$gw_type" 2>&1 | grep "^[[:space:]]*$gw_id" | awk -F'|' '{print $2}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    echo "$name"
+}
+
+lookup_gateway_country() {
+    local gw_id="$1"
+    local gw_type="$2"
+    [ -z "$gw_id" ] && return
+
+    # Extract 2-letter country code from [XX] format in the gateway line
+    local country=$($VPNC gateway list "$gw_type" 2>&1 | grep "^[[:space:]]*$gw_id" | sed -n 's/.*\[\([A-Z][A-Z]\)\].*/\1/p')
+    echo "$country"
+}
+
 handle_status() {
     local state=$($VPNC status 2>&1)
 
@@ -123,13 +142,31 @@ handle_status() {
         [ -n "$exit_ip" ] && json_add_string "exit_ip" "$exit_ip"
         [ -n "$exit_id" ] && json_add_string "exit_id" "$exit_id"
 
-        # Build gateway display strings
-        if [ -n "$entry_ip" ] && [ -n "$entry_id" ]; then
+        # Look up gateway names and countries from ID
+        if [ -n "$entry_id" ]; then
+            entry_name=$(lookup_gateway_name "$entry_id" "mixnet-entry")
+            [ -n "$entry_name" ] && json_add_string "entry_name" "$entry_name"
+            entry_country=$(lookup_gateway_country "$entry_id" "mixnet-entry")
+            [ -n "$entry_country" ] && json_add_string "entry_country" "$entry_country"
+        fi
+        if [ -n "$exit_id" ]; then
+            exit_name=$(lookup_gateway_name "$exit_id" "mixnet-exit")
+            [ -n "$exit_name" ] && json_add_string "exit_name" "$exit_name"
+            exit_country=$(lookup_gateway_country "$exit_id" "mixnet-exit")
+            [ -n "$exit_country" ] && json_add_string "exit_country" "$exit_country"
+        fi
+
+        # Build gateway display strings with name if available
+        if [ -n "$entry_name" ]; then
+            json_add_string "entry_gateway" "$entry_name"
+        elif [ -n "$entry_ip" ] && [ -n "$entry_id" ]; then
             json_add_string "entry_gateway" "$entry_ip [$entry_id]"
         elif [ -n "$entry_ip" ]; then
             json_add_string "entry_gateway" "$entry_ip"
         fi
-        if [ -n "$exit_ip" ] && [ -n "$exit_id" ]; then
+        if [ -n "$exit_name" ]; then
+            json_add_string "exit_gateway" "$exit_name"
+        elif [ -n "$exit_ip" ] && [ -n "$exit_id" ]; then
             json_add_string "exit_gateway" "$exit_ip [$exit_id]"
         elif [ -n "$exit_ip" ]; then
             json_add_string "exit_gateway" "$exit_ip"
@@ -354,13 +391,15 @@ handle_gateway_list_by_country() {
     json_init
     json_add_array "gateways"
 
-    echo "$result" | while IFS= read -r line; do
+    # Use here-string to avoid subshell issue with pipes
+    while IFS= read -r line; do
         [ -z "$line" ] && continue
         echo "$line" | grep -qi "^ID" && continue
         echo "$line" | grep -qi "^[-=]" && continue
 
         local id=$(echo "$line" | awk -F'|' '{print $1}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-        [ -z "$id" ] || [ ${#id} -lt 30 ] && continue
+        [ -z "$id" ] && continue
+        [ ${#id} -lt 30 ] && continue
 
         local rest="${line#*|}"
         local num_fields=$(echo "$rest" | awk -F'|' '{print NF}')
@@ -392,7 +431,9 @@ handle_gateway_list_by_country() {
         json_add_string "location" "${location:-Unknown}"
         json_add_string "performance" "${performance:-Unknown}"
         json_close_object
-    done
+    done <<EOF
+$result
+EOF
 
     json_close_array
     json_dump

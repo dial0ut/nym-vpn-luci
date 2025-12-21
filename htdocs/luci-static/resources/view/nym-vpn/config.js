@@ -5,22 +5,83 @@
 'require poll';
 'require dom';
 
-// Country code to name mapping
-var countryNames = {
-    'AE': 'United Arab Emirates', 'AL': 'Albania', 'AM': 'Armenia', 'AR': 'Argentina',
-    'AT': 'Austria', 'AU': 'Australia', 'BE': 'Belgium', 'BG': 'Bulgaria', 'BH': 'Bahrain',
-    'BO': 'Bolivia', 'BR': 'Brazil', 'CA': 'Canada', 'CH': 'Switzerland', 'CL': 'Chile',
-    'CO': 'Colombia', 'CR': 'Costa Rica', 'CY': 'Cyprus', 'CZ': 'Czech Republic',
-    'DE': 'Germany', 'EC': 'Ecuador', 'EE': 'Estonia', 'ES': 'Spain', 'FI': 'Finland',
-    'FR': 'France', 'GB': 'United Kingdom', 'GR': 'Greece', 'GT': 'Guatemala', 'HK': 'Hong Kong',
-    'HR': 'Croatia', 'HU': 'Hungary', 'ID': 'Indonesia', 'IE': 'Ireland', 'IL': 'Israel',
-    'IN': 'India', 'IS': 'Iceland', 'IT': 'Italy', 'JP': 'Japan', 'KH': 'Cambodia',
-    'KR': 'South Korea', 'LT': 'Lithuania', 'LV': 'Latvia', 'MD': 'Moldova', 'MK': 'North Macedonia',
-    'MX': 'Mexico', 'MY': 'Malaysia', 'NG': 'Nigeria', 'NL': 'Netherlands', 'NO': 'Norway',
-    'NZ': 'New Zealand', 'PE': 'Peru', 'PK': 'Pakistan', 'PL': 'Poland', 'PT': 'Portugal',
-    'RO': 'Romania', 'RS': 'Serbia', 'RU': 'Russia', 'SE': 'Sweden', 'SG': 'Singapore',
-    'SI': 'Slovenia', 'SK': 'Slovakia', 'TR': 'Turkey', 'TW': 'Taiwan', 'UA': 'Ukraine',
-    'US': 'United States', 'VN': 'Vietnam', 'ZA': 'South Africa'
+// Inline SVG assets (for LuCI compatibility)
+var svgAssets = {
+    logo: '<svg width="89" height="24" viewBox="0 0 89 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M0 2.23999C0 1.00288 1.00579 0 2.2465 0H10.4256C11.8792 0 13.1513 0.974115 13.5263 2.37439L18.7506 21.8815C18.8474 22.2432 19.3816 22.1733 19.3816 21.799V0H25.8001V21.7599C25.8001 22.997 24.7943 23.9999 23.5536 23.9999H15.314C13.8643 23.9999 12.5946 23.0308 12.216 21.6355L7.04928 2.5892C6.95141 2.22844 6.41855 2.29902 6.41855 2.67275V23.9999H0V2.23999Z"/><path d="M55.5159 2.45228e-05C54.2752 2.52007e-05 53.2694 1.0029 53.2694 2.24002V23.9999H59.6879V2.68233C59.6879 2.29548 60.2483 2.24066 60.3237 2.62013L64.0601 21.4219C64.3579 22.9203 65.6762 23.9999 67.2082 23.9999L74.6942 23.9999C76.2294 23.9999 77.5496 22.9158 77.8439 21.4135L81.5171 2.66662C81.5916 2.28643 82.153 2.34061 82.153 2.72798V23.9999H88.5714V2.24002C88.5714 1.0029 87.5656 2.5199e-05 86.3249 2.45188e-05L78.3813 2.01644e-05C76.859 1.93299e-05 75.5461 1.06646 75.2383 2.55306L71.2361 21.8844C71.1655 22.2251 70.6773 22.2246 70.6074 21.8838L66.6405 2.55837C66.3349 1.06926 65.0208 1.93293e-05 63.4964 2.01623e-05L55.5159 2.45228e-05Z"/><path d="M26.5569 9.04583e-05H33.3531L39.2253 12.5169C39.4563 13.0093 40.1589 13.0085 40.3888 12.5155L46.2237 9.04583e-05H53.1458L41.8949 24H34.9858L39.4713 14.4H35.3564C34.1107 14.4 32.9775 13.6813 32.4496 12.5563L26.5569 9.04583e-05Z"/></svg>',
+    qualityHigh: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.65375 19.5C6.33325 19.5 6.06083 19.3878 5.8365 19.1635C5.61217 18.9392 5.5 18.6667 5.5 18.3462V15.6538C5.5 15.3333 5.61217 15.0608 5.8365 14.8365C6.06083 14.6122 6.33325 14.5 6.65375 14.5C6.97425 14.5 7.24675 14.6122 7.47125 14.8365C7.69558 15.0608 7.80775 15.3333 7.80775 15.6538V18.3462C7.80775 18.6667 7.69558 18.9392 7.47125 19.1635C7.24675 19.3878 6.97425 19.5 6.65375 19.5ZM12.5578 19.5C12.2372 19.5 11.9648 19.3878 11.7405 19.1635C11.5162 18.9392 11.404 18.6667 11.404 18.3462V10.6538C11.404 10.3333 11.5162 10.0608 11.7405 9.8365C11.9648 9.61217 12.2372 9.5 12.5578 9.5C12.8783 9.5 13.1507 9.61217 13.375 9.8365C13.5993 10.0608 13.7115 10.3333 13.7115 10.6538V18.3462C13.7115 18.6667 13.5993 18.9392 13.375 19.1635C13.1507 19.3878 12.8783 19.5 12.5578 19.5ZM18.3462 19.5C18.0257 19.5 17.7533 19.3878 17.5288 19.1635C17.3044 18.9392 17.1923 18.6667 17.1923 18.3462V5.65375C17.1923 5.33325 17.3044 5.06083 17.5288 4.8365C17.7533 4.61217 18.0257 4.5 18.3462 4.5C18.6667 4.5 18.9392 4.61217 19.1635 4.8365C19.3878 5.06083 19.5 5.33325 19.5 5.65375V18.3462C19.5 18.6667 19.3878 18.9392 19.1635 19.1635C18.9392 19.3878 18.6667 19.5 18.3462 19.5Z" fill="#14E76F"/></svg>',
+    qualityMedium: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.65375 19.5C6.33325 19.5 6.06083 19.3878 5.8365 19.1635C5.61217 18.9392 5.5 18.6667 5.5 18.3462V15.6538C5.5 15.3333 5.61217 15.0608 5.8365 14.8365C6.06083 14.6122 6.33325 14.5 6.65375 14.5C6.97425 14.5 7.24675 14.6122 7.47125 14.8365C7.69558 15.0608 7.80775 15.3333 7.80775 15.6538V18.3462C7.80775 18.6667 7.69558 18.9392 7.47125 19.1635C7.24675 19.3878 6.97425 19.5 6.65375 19.5ZM12.5578 19.5C12.2372 19.5 11.9648 19.3878 11.7405 19.1635C11.5162 18.9392 11.404 18.6667 11.404 18.3462V10.6538C11.404 10.3333 11.5162 10.0608 11.7405 9.8365C11.9648 9.61217 12.2372 9.5 12.5578 9.5C12.8783 9.5 13.1507 9.61217 13.375 9.8365C13.5993 10.0608 13.7115 10.3333 13.7115 10.6538V18.3462C13.7115 18.6667 13.5993 18.9392 13.375 19.1635C13.1507 19.3878 12.8783 19.5 12.5578 19.5ZM18.3462 19.5C18.0257 19.5 17.7533 19.3878 17.5288 19.1635C17.3044 18.9392 17.1923 18.6667 17.1923 18.3462V5.65375C17.1923 5.33325 17.3044 5.06083 17.5288 4.8365C17.7533 4.61217 18.0257 4.5 18.3462 4.5C18.6667 4.5 18.9392 4.61217 19.1635 4.8365C19.3878 5.06083 19.5 5.33325 19.5 5.65375V18.3462C19.5 18.6667 19.3878 18.9392 19.1635 19.1635C18.9392 19.3878 18.6667 19.5 18.3462 19.5Z" fill="#606060"/><path d="M6.65375 19.5C6.33325 19.5 6.06083 19.3878 5.8365 19.1635C5.61217 18.9392 5.5 18.6667 5.5 18.3463V15.6537C5.5 15.3333 5.61217 15.0608 5.8365 14.8365C6.06083 14.6122 6.33325 14.5 6.65375 14.5C6.97425 14.5 7.24675 14.6122 7.47125 14.8365C7.69558 15.0608 7.80775 15.3333 7.80775 15.6537V18.3463C7.80775 18.6667 7.69558 18.9392 7.47125 19.1635C7.24675 19.3878 6.97425 19.5 6.65375 19.5ZM12.5578 19.5C12.2373 19.5 11.9648 19.3878 11.7405 19.1635C11.5162 18.9392 11.404 18.6667 11.404 18.3463V10.6538C11.404 10.3333 11.5162 10.0608 11.7405 9.8365C11.9648 9.61217 12.2373 9.5 12.5578 9.5C12.8783 9.5 13.1507 9.61217 13.375 9.8365C13.5993 10.0608 13.7115 10.3333 13.7115 10.6538V18.3463C13.7115 18.6667 13.5993 18.9392 13.375 19.1635C13.1507 19.3878 12.8783 19.5 12.5578 19.5Z" fill="#FFB400"/></svg>',
+    qualityLow: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.65375 19.5C6.33325 19.5 6.06083 19.3878 5.8365 19.1635C5.61217 18.9392 5.5 18.6667 5.5 18.3462V15.6538C5.5 15.3333 5.61217 15.0608 5.8365 14.8365C6.06083 14.6122 6.33325 14.5 6.65375 14.5C6.97425 14.5 7.24675 14.6122 7.47125 14.8365C7.69558 15.0608 7.80775 15.3333 7.80775 15.6538V18.3462C7.80775 18.6667 7.69558 18.9392 7.47125 19.1635C7.24675 19.3878 6.97425 19.5 6.65375 19.5ZM12.5578 19.5C12.2372 19.5 11.9648 19.3878 11.7405 19.1635C11.5162 18.9392 11.404 18.6667 11.404 18.3462V10.6538C11.404 10.3333 11.5162 10.0608 11.7405 9.8365C11.9648 9.61217 12.2372 9.5 12.5578 9.5C12.8783 9.5 13.1507 9.61217 13.375 9.8365C13.5993 10.0608 13.7115 10.3333 13.7115 10.6538V18.3462C13.7115 18.6667 13.5993 18.9392 13.375 19.1635C13.1507 19.3878 12.8783 19.5 12.5578 19.5ZM18.3462 19.5C18.0257 19.5 17.7533 19.3878 17.5288 19.1635C17.3044 18.9392 17.1923 18.6667 17.1923 18.3462V5.65375C17.1923 5.33325 17.3044 5.06083 17.5288 4.8365C17.7533 4.61217 18.0257 4.5 18.3462 4.5C18.6667 4.5 18.9392 4.61217 19.1635 4.8365C19.3878 5.06083 19.5 5.33325 19.5 5.65375V18.3462C19.5 18.6667 19.3878 18.9392 19.1635 19.1635C18.9392 19.3878 18.6667 19.5 18.3462 19.5Z" fill="#5F6368"/><path d="M6.65375 19.5C6.33325 19.5 6.06083 19.3878 5.8365 19.1635C5.61217 18.9392 5.5 18.6668 5.5 18.3463V15.6537C5.5 15.3332 5.61217 15.0608 5.8365 14.8365C6.06083 14.6122 6.33325 14.5 6.65375 14.5C6.97425 14.5 7.24675 14.6122 7.47125 14.8365C7.69558 15.0608 7.80775 15.3332 7.80775 15.6537V18.3463C7.80775 18.6668 7.69558 18.9392 7.47125 19.1635C7.24675 19.3878 6.97425 19.5 6.65375 19.5Z" fill="#ED5060"/></svg>',
+    qualityOffline: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.65375 19.5C6.33325 19.5 6.06083 19.3878 5.8365 19.1635C5.61217 18.9392 5.5 18.6667 5.5 18.3462V15.6538C5.5 15.3333 5.61217 15.0608 5.8365 14.8365C6.06083 14.6122 6.33325 14.5 6.65375 14.5C6.97425 14.5 7.24675 14.6122 7.47125 14.8365C7.69558 15.0608 7.80775 15.3333 7.80775 15.6538V18.3462C7.80775 18.6667 7.69558 18.9392 7.47125 19.1635C7.24675 19.3878 6.97425 19.5 6.65375 19.5ZM12.5578 19.5C12.2373 19.5 11.9648 19.3878 11.7405 19.1635C11.5162 18.9392 11.404 18.6667 11.404 18.3462V10.6538C11.404 10.3333 11.5162 10.0608 11.7405 9.8365C11.9648 9.61217 12.2373 9.5 12.5578 9.5C12.8783 9.5 13.1507 9.61217 13.375 9.8365C13.5993 10.0608 13.7115 10.3333 13.7115 10.6538V18.3462C13.7115 18.6667 13.5993 18.9392 13.375 19.1635C13.1507 19.3878 12.8783 19.5 12.5578 19.5ZM18.3462 19.5C18.0257 19.5 17.7533 19.3878 17.5288 19.1635C17.3044 18.9392 17.1923 18.6667 17.1923 18.3462V5.65375C17.1923 5.33325 17.3044 5.06083 17.5288 4.8365C17.7533 4.61217 18.0257 4.5 18.3462 4.5C18.6667 4.5 18.9392 4.61217 19.1635 4.8365C19.3878 5.06083 19.5 5.33325 19.5 5.65375V18.3462C19.5 18.6667 19.3878 18.9392 19.1635 19.1635C18.9392 19.3878 18.6667 19.5 18.3462 19.5Z" fill="#606060"/><path d="M6.65375 19.5C6.33325 19.5 6.06083 19.3878 5.8365 19.1635C5.61217 18.9392 5.5 18.6668 5.5 18.3463V15.6537C5.5 15.3332 5.61217 15.0608 5.8365 14.8365C6.06083 14.6122 6.33325 14.5 6.65375 14.5C6.97425 14.5 7.24675 14.6122 7.47125 14.8365C7.69558 15.0608 7.80775 15.3332 7.80775 15.6537V18.3463C7.80775 18.6668 7.69558 18.9392 7.47125 19.1635C7.24675 19.3878 6.97425 19.5 6.65375 19.5Z" fill="#606060"/></svg>'
+};
+
+// Country code to flag emoji and name mapping
+var countryData = {
+    'AE': { flag: '🇦🇪', name: 'United Arab Emirates' },
+    'AL': { flag: '🇦🇱', name: 'Albania' },
+    'AM': { flag: '🇦🇲', name: 'Armenia' },
+    'AR': { flag: '🇦🇷', name: 'Argentina' },
+    'AT': { flag: '🇦🇹', name: 'Austria' },
+    'AU': { flag: '🇦🇺', name: 'Australia' },
+    'BE': { flag: '🇧🇪', name: 'Belgium' },
+    'BG': { flag: '🇧🇬', name: 'Bulgaria' },
+    'BH': { flag: '🇧🇭', name: 'Bahrain' },
+    'BO': { flag: '🇧🇴', name: 'Bolivia' },
+    'BR': { flag: '🇧🇷', name: 'Brazil' },
+    'CA': { flag: '🇨🇦', name: 'Canada' },
+    'CH': { flag: '🇨🇭', name: 'Switzerland' },
+    'CL': { flag: '🇨🇱', name: 'Chile' },
+    'CO': { flag: '🇨🇴', name: 'Colombia' },
+    'CR': { flag: '🇨🇷', name: 'Costa Rica' },
+    'CY': { flag: '🇨🇾', name: 'Cyprus' },
+    'CZ': { flag: '🇨🇿', name: 'Czech Republic' },
+    'DE': { flag: '🇩🇪', name: 'Germany' },
+    'EC': { flag: '🇪🇨', name: 'Ecuador' },
+    'EE': { flag: '🇪🇪', name: 'Estonia' },
+    'ES': { flag: '🇪🇸', name: 'Spain' },
+    'FI': { flag: '🇫🇮', name: 'Finland' },
+    'FR': { flag: '🇫🇷', name: 'France' },
+    'GB': { flag: '🇬🇧', name: 'United Kingdom' },
+    'GR': { flag: '🇬🇷', name: 'Greece' },
+    'GT': { flag: '🇬🇹', name: 'Guatemala' },
+    'HK': { flag: '🇭🇰', name: 'Hong Kong' },
+    'HR': { flag: '🇭🇷', name: 'Croatia' },
+    'HU': { flag: '🇭🇺', name: 'Hungary' },
+    'ID': { flag: '🇮🇩', name: 'Indonesia' },
+    'IE': { flag: '🇮🇪', name: 'Ireland' },
+    'IL': { flag: '🇮🇱', name: 'Israel' },
+    'IN': { flag: '🇮🇳', name: 'India' },
+    'IS': { flag: '🇮🇸', name: 'Iceland' },
+    'IT': { flag: '🇮🇹', name: 'Italy' },
+    'JP': { flag: '🇯🇵', name: 'Japan' },
+    'KH': { flag: '🇰🇭', name: 'Cambodia' },
+    'KR': { flag: '🇰🇷', name: 'South Korea' },
+    'LT': { flag: '🇱🇹', name: 'Lithuania' },
+    'LV': { flag: '🇱🇻', name: 'Latvia' },
+    'MD': { flag: '🇲🇩', name: 'Moldova' },
+    'MK': { flag: '🇲🇰', name: 'North Macedonia' },
+    'MX': { flag: '🇲🇽', name: 'Mexico' },
+    'MY': { flag: '🇲🇾', name: 'Malaysia' },
+    'NG': { flag: '🇳🇬', name: 'Nigeria' },
+    'NL': { flag: '🇳🇱', name: 'Netherlands' },
+    'NO': { flag: '🇳🇴', name: 'Norway' },
+    'NZ': { flag: '🇳🇿', name: 'New Zealand' },
+    'PE': { flag: '🇵🇪', name: 'Peru' },
+    'PK': { flag: '🇵🇰', name: 'Pakistan' },
+    'PL': { flag: '🇵🇱', name: 'Poland' },
+    'PT': { flag: '🇵🇹', name: 'Portugal' },
+    'RO': { flag: '🇷🇴', name: 'Romania' },
+    'RS': { flag: '🇷🇸', name: 'Serbia' },
+    'RU': { flag: '🇷🇺', name: 'Russia' },
+    'SE': { flag: '🇸🇪', name: 'Sweden' },
+    'SG': { flag: '🇸🇬', name: 'Singapore' },
+    'SI': { flag: '🇸🇮', name: 'Slovenia' },
+    'SK': { flag: '🇸🇰', name: 'Slovakia' },
+    'TR': { flag: '🇹🇷', name: 'Turkey' },
+    'TW': { flag: '🇹🇼', name: 'Taiwan' },
+    'UA': { flag: '🇺🇦', name: 'Ukraine' },
+    'US': { flag: '🇺🇸', name: 'United States' },
+    'VN': { flag: '🇻🇳', name: 'Vietnam' },
+    'ZA': { flag: '🇿🇦', name: 'South Africa' }
 };
 
 var callStatus = rpc.declare({
@@ -125,6 +186,1061 @@ var callLanSet = rpc.declare({
     params: ['policy']
 });
 
+// Main theme CSS
+var themeCSS = `
+    /* ═══════════════════════════════════════════════════════════════
+       NYM VPN - Dark Theme
+       ═══════════════════════════════════════════════════════════════ */
+
+    :root {
+        --nym-green: #00ff94;
+        --nym-green-dim: rgba(0, 255, 148, 0.15);
+        --nym-green-glow: rgba(0, 255, 148, 0.4);
+        --bg-primary: #121218;
+        --bg-secondary: #1a1a24;
+        --bg-card: #1e1e2a;
+        --bg-card-hover: #252532;
+        --bg-input: #0d0d12;
+        --border-color: #2a2a3a;
+        --border-accent: #3a3a4a;
+        --text-primary: #e8e8ec;
+        --text-secondary: #9090a0;
+        --text-muted: #606070;
+        --danger: #ff4757;
+        --danger-dim: rgba(255, 71, 87, 0.15);
+        --warning: #ffa502;
+        --warning-dim: rgba(255, 165, 2, 0.15);
+    }
+
+    /* Container reset */
+    #view {
+        background: var(--bg-primary) !important;
+        min-height: 100vh;
+        padding: 0 !important;
+    }
+
+    .nym-container {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+        padding: 24px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Header
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-header {
+        text-align: center;
+        padding: 32px 0 40px;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 32px;
+    }
+
+    .nym-logo {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+
+    .nym-logo svg {
+        height: 40px;
+        width: auto;
+        fill: var(--nym-green);
+    }
+
+    .nym-subtitle {
+        color: var(--text-muted);
+        font-size: 13px;
+        margin-top: 12px;
+        font-weight: 400;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Status Hero Section
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-status-hero {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 48px 32px;
+        text-align: center;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .nym-status-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--nym-green), transparent);
+        opacity: 0;
+        transition: opacity 0.5s;
+    }
+
+    .nym-status-hero.connected::before {
+        opacity: 1;
+    }
+
+    /* Status Ring */
+    .nym-status-ring {
+        width: 160px;
+        height: 160px;
+        margin: 0 auto 32px;
+        position: relative;
+    }
+
+    .nym-status-ring-outer {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 2px solid var(--border-color);
+        position: absolute;
+        top: 0;
+        left: 0;
+        transition: all 0.5s ease;
+    }
+
+    .nym-status-ring-inner {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: var(--bg-secondary);
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        transition: all 0.5s ease;
+    }
+
+    .nym-status-ring-pulse {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        border: 2px solid transparent;
+        animation: none;
+    }
+
+    /* Connected state */
+    .nym-status-hero.connected .nym-status-ring-outer {
+        border-color: var(--nym-green);
+        box-shadow: 0 0 30px var(--nym-green-glow), inset 0 0 20px var(--nym-green-dim);
+    }
+
+    .nym-status-hero.connected .nym-status-ring-pulse {
+        border-color: var(--nym-green);
+        animation: pulse-ring 2s ease-out infinite;
+    }
+
+    .nym-status-hero.connected .nym-status-ring-inner {
+        background: var(--nym-green-dim);
+    }
+
+    /* Connecting state */
+    .nym-status-hero.connecting .nym-status-ring-outer,
+    .nym-status-hero.disconnecting .nym-status-ring-outer {
+        border-color: var(--warning);
+        border-width: 3px;
+        animation: rotate-ring 4s linear infinite;
+        border-style: dashed;
+    }
+
+    .nym-status-hero.connecting .nym-status-ring-inner,
+    .nym-status-hero.disconnecting .nym-status-ring-inner {
+        background: var(--warning-dim);
+    }
+
+    /* Disconnected state */
+    .nym-status-hero.disconnected .nym-status-ring-outer {
+        border-color: var(--text-muted);
+    }
+
+    @keyframes pulse-ring {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(1.3);
+            opacity: 0;
+        }
+    }
+
+    @keyframes rotate-ring {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .nym-status-label {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        text-align: center;
+    }
+
+    .nym-status-hero.connected .nym-status-label {
+        color: var(--nym-green);
+    }
+
+    .nym-status-hero.connecting .nym-status-label,
+    .nym-status-hero.disconnecting .nym-status-label {
+        color: var(--warning);
+    }
+
+    /* Uptime display */
+    .nym-uptime {
+        font-size: 28px;
+        font-weight: 300;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .nym-uptime-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Gateway info in hero */
+    .nym-gateway-display {
+        display: flex;
+        justify-content: center;
+        gap: 48px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .nym-gateway-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 120px;
+    }
+
+    .nym-gateway-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        text-indent: 2px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        text-align: center;
+    }
+
+    .nym-gateway-value {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .nym-gateway-flag {
+        font-size: 28px;
+        line-height: 1;
+        min-width: 36px;
+        text-align: center;
+    }
+
+    .nym-gateway-name {
+        font-size: 12px;
+        color: var(--text-primary);
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .nym-gateway-ip {
+        font-size: 10px;
+        color: var(--text-muted);
+        font-family: monospace;
+    }
+
+    .nym-gateway-empty {
+        font-size: 24px;
+        color: var(--text-muted);
+    }
+
+    /* Connect/Disconnect buttons */
+    .nym-action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 32px;
+    }
+
+    .nym-btn {
+        padding: 14px 40px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+
+    .nym-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .nym-btn-primary {
+        background: var(--nym-green);
+        color: var(--bg-primary);
+    }
+
+    .nym-btn-primary:hover:not(:disabled) {
+        background: #00e085;
+        box-shadow: 0 0 24px var(--nym-green-glow);
+        transform: translateY(-1px);
+    }
+
+    .nym-btn-primary:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    .nym-btn-danger {
+        background: transparent;
+        color: var(--danger);
+        border: 1px solid var(--danger);
+    }
+
+    .nym-btn-danger:hover:not(:disabled) {
+        background: var(--danger-dim);
+    }
+
+    .nym-btn-secondary {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    .nym-btn-secondary:hover:not(:disabled) {
+        border-color: var(--text-secondary);
+        color: var(--text-primary);
+    }
+
+    .nym-btn-small {
+        padding: 8px 16px;
+        font-size: 11px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Cards & Sections
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .nym-card-header {
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: background 0.2s;
+        user-select: none;
+    }
+
+    .nym-card-header:hover {
+        background: var(--bg-card-hover);
+    }
+
+    .nym-card-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .nym-card-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--nym-green-dim);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .nym-card-chevron {
+        color: var(--text-muted);
+        transition: transform 0.3s ease;
+        font-size: 12px;
+    }
+
+    .nym-card.expanded .nym-card-chevron {
+        transform: rotate(180deg);
+    }
+
+    .nym-card-body {
+        padding: 0 20px 20px;
+        display: none;
+    }
+
+    .nym-card.expanded .nym-card-body {
+        display: block;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Custom Modal
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        backdrop-filter: blur(4px);
+    }
+
+    .nym-modal {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 40px;
+        text-align: center;
+        max-width: 320px;
+        width: 90%;
+    }
+
+    .nym-modal-ring {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 24px;
+        position: relative;
+    }
+
+    .nym-modal-ring-outer {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 3px dashed var(--warning);
+        animation: rotate-ring 2s linear infinite;
+        position: absolute;
+    }
+
+    .nym-modal-ring-inner {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: var(--warning-dim);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .nym-modal-icon {
+        font-size: 32px;
+    }
+
+    .nym-modal-title {
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .nym-modal-message {
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Toast Notifications
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10001;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 360px;
+    }
+
+    .nym-toast {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideIn 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .nym-toast.success {
+        border-left: 3px solid var(--nym-green);
+    }
+
+    .nym-toast.error {
+        border-left: 3px solid var(--danger);
+    }
+
+    .nym-toast.warning {
+        border-left: 3px solid var(--warning);
+    }
+
+    .nym-toast-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .nym-toast.success .nym-toast-icon { color: var(--nym-green); }
+    .nym-toast.error .nym-toast-icon { color: var(--danger); }
+    .nym-toast.warning .nym-toast-icon { color: var(--warning); }
+
+    .nym-toast-message {
+        color: var(--text-primary);
+        font-size: 13px;
+        flex: 1;
+    }
+
+    .nym-toast-close {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px;
+        font-size: 16px;
+    }
+
+    .nym-toast-close:hover {
+        color: var(--text-primary);
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(100px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateX(100px);
+        }
+    }
+
+    .nym-card-description {
+        color: var(--text-muted);
+        font-size: 12px;
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Form Elements
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-form-group {
+        margin-bottom: 20px;
+    }
+
+    .nym-form-label {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+    }
+
+    .nym-select {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23606070' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 16px center;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .nym-select:hover {
+        border-color: var(--border-accent);
+    }
+
+    .nym-select:focus {
+        outline: none;
+        border-color: var(--nym-green);
+        box-shadow: 0 0 0 3px var(--nym-green-dim);
+    }
+
+    .nym-input {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .nym-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .nym-input:focus {
+        outline: none;
+        border-color: var(--nym-green);
+        box-shadow: 0 0 0 3px var(--nym-green-dim);
+    }
+
+    /* Toggle Switch */
+    .nym-toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .nym-toggle-row:last-child {
+        border-bottom: none;
+    }
+
+    .nym-toggle-info {
+        flex: 1;
+    }
+
+    .nym-toggle-title {
+        font-size: 14px;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .nym-toggle-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .nym-toggle {
+        position: relative;
+        width: 48px;
+        height: 26px;
+        flex-shrink: 0;
+        margin-left: 16px;
+    }
+
+    .nym-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .nym-toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        border-radius: 26px;
+        transition: all 0.3s ease;
+    }
+
+    .nym-toggle-slider::before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background: var(--text-muted);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .nym-toggle input:checked + .nym-toggle-slider {
+        background: var(--nym-green-dim);
+        border-color: var(--nym-green);
+    }
+
+    .nym-toggle input:checked + .nym-toggle-slider::before {
+        transform: translateX(22px);
+        background: var(--nym-green);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Gateway Selection Grid
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-gateway-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+        .nym-gateway-section {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .nym-gateway-box {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+    }
+
+    .nym-gateway-box-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--nym-green);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nym-gateway-box-title::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: var(--nym-green);
+        border-radius: 50%;
+    }
+
+    .nym-gateway-loading {
+        color: var(--text-muted);
+        font-size: 13px;
+        font-style: italic;
+        padding: 12px 0;
+    }
+
+    .nym-gateway-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        margin-bottom: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .nym-gateway-option:hover {
+        border-color: var(--nym-green);
+        background: var(--bg-card-hover);
+    }
+
+    .nym-gateway-option.selected {
+        border-color: var(--nym-green);
+        background: var(--nym-green-dim);
+    }
+
+    .nym-gateway-option input[type="radio"] {
+        display: none;
+    }
+
+    .nym-gateway-option-icon {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+
+    .nym-gateway-option-icon svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .nym-gateway-option-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .nym-gateway-option-name {
+        font-size: 13px;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .nym-gateway-option-perf {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .nym-gateway-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .nym-gateway-list::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .nym-gateway-list::-webkit-scrollbar-track {
+        background: var(--bg-input);
+    }
+
+    .nym-gateway-list::-webkit-scrollbar-thumb {
+        background: var(--border-accent);
+        border-radius: 2px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Info Grid
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    @media (max-width: 500px) {
+        .nym-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .nym-info-item {
+        background: var(--bg-secondary);
+        padding: 12px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+
+    .nym-info-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+
+    .nym-info-value {
+        font-size: 14px;
+        color: var(--text-primary);
+        word-break: break-all;
+    }
+
+    .nym-info-value.truncate {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Account Section
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-account-logged-in {
+        text-align: center;
+        padding: 20px 0;
+    }
+
+    .nym-account-id {
+        background: var(--bg-input);
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        word-break: break-all;
+        margin-bottom: 16px;
+        border: 1px solid var(--border-color);
+    }
+
+    .nym-account-state {
+        display: inline-block;
+        padding: 6px 12px;
+        background: var(--nym-green-dim);
+        color: var(--nym-green);
+        border-radius: 20px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 20px;
+    }
+
+    .nym-account-actions {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Footer Info
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-footer {
+        text-align: center;
+        padding: 24px 0;
+        border-top: 1px solid var(--border-color);
+        margin-top: 24px;
+    }
+
+    .nym-footer-info {
+        display: flex;
+        justify-content: center;
+        gap: 32px;
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .nym-footer-item span {
+        color: var(--text-secondary);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Tooltip
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-tooltip {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        background: var(--border-color);
+        border-radius: 50%;
+        font-size: 10px;
+        color: var(--text-muted);
+        cursor: help;
+        margin-left: 8px;
+    }
+
+    .nym-tooltip::after {
+        content: attr(data-tip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 11px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s;
+        z-index: 100;
+        margin-bottom: 8px;
+    }
+
+    .nym-tooltip:hover::after {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Utility
+       ───────────────────────────────────────────────────────────────── */
+
+    .nym-divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 20px 0;
+    }
+
+    .nym-text-center {
+        text-align: center;
+    }
+
+    .nym-text-muted {
+        color: var(--text-muted);
+    }
+
+    .nym-mt-16 {
+        margin-top: 16px;
+    }
+
+    .nym-mb-16 {
+        margin-bottom: 16px;
+    }
+
+    /* Hide LuCI default styles */
+    .cbi-map > h2,
+    .cbi-map > .cbi-map-descr {
+        display: none !important;
+    }
+`;
+
 return view.extend({
     load: function() {
         return Promise.all([
@@ -138,7 +1254,7 @@ return view.extend({
             callNetworkGet(),
             callLanGet()
         ]).catch(function(err) {
-            ui.addNotification(null, E('p', {}, 'Failed to load Nym VPN data: ' + err.message));
+            showToast('Failed to load Nym VPN data: ' + err.message, 'error');
             return [null, null, null, [], [], null, null, null, null];
         });
     },
@@ -155,15 +1271,17 @@ return view.extend({
         var lan_policy = data[8] || {};
 
         var view = this;
-        var statusSection;
-        var statusText;
-        var connectBtn;
-        var disconnectBtn;
 
-        // Uptime tracking with localStorage persistence
+        // State references
+        var statusHero, statusLabel, uptimeDisplay;
+        var actionBtn;
+        var entryGatewayDisplay, exitGatewayDisplay;
+        var entryCountrySelect, exitCountrySelect;
+        var entryGatewayContainer, exitGatewayContainer;
+
+        // Uptime tracking
         var connectionStartTime = null;
         var uptimeInterval = null;
-        var uptimeDisplay = null;
         var UPTIME_STORAGE_KEY = 'nym_vpn_connection_start';
 
         var formatUptime = function(seconds) {
@@ -171,39 +1289,35 @@ return view.extend({
             var minutes = Math.floor((seconds % 3600) / 60);
             var secs = seconds % 60;
 
+            var pad = function(n) { return n < 10 ? '0' + n : n; };
+
             if (hours > 0) {
-                return hours + 'h ' + minutes + 'm ' + secs + 's';
-            } else if (minutes > 0) {
-                return minutes + 'm ' + secs + 's';
+                return pad(hours) + ':' + pad(minutes) + ':' + pad(secs);
             } else {
-                return secs + 's';
+                return pad(minutes) + ':' + pad(secs);
             }
         };
 
         var startUptimeTimer = function(existingStartTime) {
-            if (uptimeInterval) {
-                clearInterval(uptimeInterval);
-            }
+            if (uptimeInterval) clearInterval(uptimeInterval);
 
-            // Use existing start time or create new one
-            if (existingStartTime) {
-                connectionStartTime = existingStartTime;
-            } else {
-                connectionStartTime = Date.now();
-                // Persist to localStorage
-                try {
-                    localStorage.setItem(UPTIME_STORAGE_KEY, connectionStartTime.toString());
-                } catch (e) {
-                    console.warn('Could not save connection time to localStorage:', e);
-                }
-            }
+            connectionStartTime = existingStartTime || Date.now();
 
-            uptimeInterval = setInterval(function() {
+            // Always save to localStorage to ensure persistence
+            try {
+                localStorage.setItem(UPTIME_STORAGE_KEY, connectionStartTime.toString());
+            } catch (e) {}
+
+            // Immediately show current elapsed time
+            var updateDisplay = function() {
                 if (uptimeDisplay && connectionStartTime) {
                     var elapsed = Math.floor((Date.now() - connectionStartTime) / 1000);
                     uptimeDisplay.textContent = formatUptime(elapsed);
                 }
-            }, 1000);
+            };
+
+            updateDisplay();
+            uptimeInterval = setInterval(updateDisplay, 1000);
         };
 
         var stopUptimeTimer = function() {
@@ -212,1018 +1326,743 @@ return view.extend({
                 uptimeInterval = null;
             }
             connectionStartTime = null;
-
-            // Clear from localStorage
-            try {
-                localStorage.removeItem(UPTIME_STORAGE_KEY);
-            } catch (e) {
-                console.warn('Could not clear connection time from localStorage:', e);
-            }
-
-            if (uptimeDisplay) {
-                uptimeDisplay.textContent = '-';
-            }
+            try { localStorage.removeItem(UPTIME_STORAGE_KEY); } catch (e) {}
+            if (uptimeDisplay) uptimeDisplay.textContent = '--:--';
         };
 
         var getStoredStartTime = function() {
             try {
                 var stored = localStorage.getItem(UPTIME_STORAGE_KEY);
-                if (stored) {
-                    return parseInt(stored, 10);
-                }
-            } catch (e) {
-                console.warn('Could not read connection time from localStorage:', e);
+                return stored ? parseInt(stored, 10) : null;
+            } catch (e) { return null; }
+        };
+
+        // Get country display with flag
+        var getCountryDisplay = function(code) {
+            if (!code || code === 'random' || code === 'Random') {
+                return { flag: '🌐', name: 'Random' };
             }
-            return null;
+            return countryData[code] || { flag: '🏳️', name: code };
         };
 
-        // Gateway selection elements
-        var entryGatewaySelectContainer;
-        var exitGatewaySelectContainer;
-        var entryCountrySelectContainer;
-        var exitCountrySelectContainer;
-        var gatewayInfoText;
-
-        var updateGatewayDisplay = function() {
-            return Promise.all([
-                callGatewayGet(),
-                callStatus()
-            ]).then(function(results) {
-                var config = results[0] || {};
-                var status = results[1] || {};
-
-                var entryDisplay = document.getElementById('current-entry-display');
-                var exitDisplay = document.getElementById('current-exit-display');
-
-                // If connected, show actual connected gateways; otherwise show "Not connected"
-                if (status.state === 'connected' && status.entry_gateway) {
-                    if (entryDisplay) {
-                        entryDisplay.textContent = status.entry_gateway;
-                    }
-                    if (exitDisplay) {
-                        exitDisplay.textContent = status.exit_gateway || 'Unknown';
-                    }
-                } else {
-                    if (entryDisplay) {
-                        entryDisplay.textContent = 'Not connected';
-                    }
-                    if (exitDisplay) {
-                        exitDisplay.textContent = 'Not connected';
-                    }
-                }
-            }).catch(function(err) {
-                console.error('Gateway display update failed:', err);
-            });
-        };
-
-        var updateStatus = L.bind(function() {
+        // Update status display
+        var updateStatus = function() {
             return callStatus().then(function(result) {
                 if (!result) return;
 
                 var state = result.state || 'unknown';
-                var color = 'gray';
-                var displayState = state;
+
+                // Update hero class
+                if (statusHero) {
+                    statusHero.className = 'nym-status-hero ' + state;
+                }
+
+                // Update label
+                if (statusLabel) {
+                    if (state === 'connected') {
+                        statusLabel.textContent = 'Connected';
+                        if (!connectionStartTime) {
+                            startUptimeTimer(getStoredStartTime());
+                        }
+                    } else if (state === 'connecting') {
+                        statusLabel.textContent = 'Connecting';
+                        stopUptimeTimer();
+                    } else if (state === 'disconnecting') {
+                        statusLabel.textContent = 'Disconnecting';
+                    } else {
+                        statusLabel.textContent = 'Disconnected';
+                        stopUptimeTimer();
+                    }
+                }
+
+                // Update buttons
+                if (actionBtn) {
+                    if (state === 'connected') {
+                        actionBtn.textContent = 'Disconnect';
+                        actionBtn.className = 'nym-btn nym-btn-danger';
+                        actionBtn.disabled = false;
+                        actionBtn.onclick = handleDisconnect;
+                    } else if (state === 'disconnected') {
+                        actionBtn.textContent = 'Connect';
+                        actionBtn.className = 'nym-btn nym-btn-primary';
+                        actionBtn.disabled = false;
+                        actionBtn.onclick = handleConnect;
+                    } else {
+                        actionBtn.disabled = true;
+                    }
+                }
+
+                // Update gateway display with actual connected node names
+                var renderGatewayInfo = function(container, name, ip, country) {
+                    if (!container) return;
+                    if (!name && !ip) {
+                        container.innerHTML = '<div class="nym-gateway-empty">—</div>';
+                        return;
+                    }
+                    var flag = country ? (countryData[country] || {}).flag || '🌐' : '🌐';
+                    var html = '<div class="nym-gateway-flag">' + flag + '</div>';
+                    if (name) html += '<div class="nym-gateway-name" title="' + (name || '') + '">' + name + '</div>';
+                    if (ip) html += '<div class="nym-gateway-ip">' + ip + '</div>';
+                    container.innerHTML = html;
+                };
 
                 if (state === 'connected') {
-                    color = 'green';
-                    displayState = 'Connected';
-                    // Start timer if not already running
-                    if (!connectionStartTime) {
-                        var storedTime = getStoredStartTime();
-                        startUptimeTimer(storedTime || null);
-                    }
-                } else if (state === 'disconnected') {
-                    color = 'red';
-                    displayState = 'Disconnected';
-                    stopUptimeTimer();
-                } else if (state === 'connecting') {
-                    color = 'orange';
-                    displayState = 'Connecting...';
-                    stopUptimeTimer();
-                } else if (state === 'disconnecting') {
-                    color = 'orange';
-                    displayState = 'Disconnecting...';
-                    // Keep timer running during disconnect
+                    renderGatewayInfo(entryGatewayDisplay,
+                        result.entry_name || result.entry_id,
+                        result.entry_ip,
+                        result.entry_country);
+                    renderGatewayInfo(exitGatewayDisplay,
+                        result.exit_name || result.exit_id,
+                        result.exit_ip,
+                        result.exit_country);
                 } else {
-                    stopUptimeTimer();
-                }
-
-                if (statusText) {
-                    statusText.innerHTML = '<span style="font-weight:bold;color:' + color + '">' + displayState + '</span>';
-                }
-
-                if (connectBtn && disconnectBtn) {
-                    if (state === 'connected' || state === 'connecting') {
-                        connectBtn.disabled = true;
-                        disconnectBtn.disabled = false;
-                    } else {
-                        connectBtn.disabled = false;
-                        disconnectBtn.disabled = true;
-                    }
+                    if (entryGatewayDisplay) entryGatewayDisplay.innerHTML = '<div class="nym-gateway-empty">—</div>';
+                    if (exitGatewayDisplay) exitGatewayDisplay.innerHTML = '<div class="nym-gateway-empty">—</div>';
                 }
 
             }).catch(function(err) {
                 console.error('Status update failed:', err);
             });
-        }, this);
+        };
 
-        var handleConnect = L.bind(function() {
-            var modalContent = E('p', { 'class': 'spinning' }, _('Establishing VPN connection...'));
-            ui.showModal(_('Connecting'), [modalContent]);
+        // Custom modal helpers
+        var activeModal = null;
 
-            // Start connection
+        var showModal = function(title, message, icon) {
+            hideModal();
+            activeModal = E('div', { 'class': 'nym-modal-overlay' }, [
+                E('div', { 'class': 'nym-modal' }, [
+                    E('div', { 'class': 'nym-modal-ring' }, [
+                        E('div', { 'class': 'nym-modal-ring-outer' }),
+                        E('div', { 'class': 'nym-modal-ring-inner' }, [
+                            E('div', { 'class': 'nym-modal-icon' }, icon || '◐')
+                        ])
+                    ]),
+                    E('div', { 'class': 'nym-modal-title' }, title),
+                    E('div', { 'class': 'nym-modal-message' }, message)
+                ])
+            ]);
+            document.body.appendChild(activeModal);
+        };
+
+        var hideModal = function() {
+            if (activeModal && activeModal.parentNode) {
+                activeModal.parentNode.removeChild(activeModal);
+                activeModal = null;
+            }
+        };
+
+        // Toast notification helpers
+        var toastContainer = null;
+
+        var ensureToastContainer = function() {
+            if (!toastContainer || !toastContainer.parentNode) {
+                toastContainer = E('div', { 'class': 'nym-toast-container' });
+                document.body.appendChild(toastContainer);
+            }
+            return toastContainer;
+        };
+
+        var showToast = function(message, type) {
+            var container = ensureToastContainer();
+            var icons = { success: '✓', error: '✕', warning: '⚠' };
+            var toast = E('div', { 'class': 'nym-toast ' + (type || 'success') }, [
+                E('span', { 'class': 'nym-toast-icon' }, icons[type] || '✓'),
+                E('span', { 'class': 'nym-toast-message' }, message),
+                E('button', { 'class': 'nym-toast-close', 'click': function() { removeToast(toast); } }, '×')
+            ]);
+            container.appendChild(toast);
+            setTimeout(function() { removeToast(toast); }, 4000);
+        };
+
+        var removeToast = function(toast) {
+            if (toast && toast.parentNode) {
+                toast.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(function() {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 300);
+            }
+        };
+
+        // Connection handlers
+        var handleConnect = function() {
+            // Set connecting state immediately to show animation
+            if (statusHero) statusHero.className = 'nym-status-hero connecting';
+            if (statusLabel) statusLabel.textContent = 'Connecting';
+            if (actionBtn) actionBtn.disabled = true;
+
             callConnect().then(function(result) {
                 if (!result || !result.success) {
-                    ui.hideModal();
-                    ui.addNotification(null, E('p', {}, _('Connection failed: ') + (result.error || 'Unknown error')), 'error');
+                    showToast('Connection failed: ' + (result.error || 'Unknown error'), 'error');
+                    updateStatus();
                     return;
                 }
 
-                // Poll status every second until connected
                 var pollCount = 0;
-                var maxPolls = 60; // Max 60 seconds
+                var maxPolls = 60;
 
                 var pollStatus = function() {
                     pollCount++;
-                    callStatus().then(function(status) {
-                        if (status && status.state === 'connected') {
-                            // Show success in modal
-                            modalContent.className = '';
-                            var msg = _('Connected successfully');
-                            if (status.mode === 'wireguard') {
-                                msg += ' (2-hop WireGuard)';
-                            } else {
-                                msg += ' (5-hop Mixnet)';
-                            }
-                            if (status.entry_gateway) {
-                                msg += '\nEntry: ' + status.entry_gateway;
-                            }
-                            if (status.exit_gateway) {
-                                msg += '\nExit: ' + status.exit_gateway;
-                            }
-                            modalContent.textContent = msg;
-                            modalContent.style.whiteSpace = 'pre-line';
-                            setTimeout(function() {
-                                ui.hideModal();
-                                updateStatus();
-                                updateGatewayDisplay();
-                            }, 2000);
-                        } else if (status && status.state === 'connecting') {
-                            // Update modal with progress
-                            var progressMsg = _('Connecting...');
-                            if (status.raw_state) {
-                                progressMsg = status.raw_state.replace('State: ', '');
-                            }
-                            modalContent.textContent = progressMsg;
-
+                    callStatus().then(function(st) {
+                        if (st && st.state === 'connected') {
+                            updateStatus();
+                        } else if (st && st.state === 'connecting') {
                             if (pollCount < maxPolls) {
                                 setTimeout(pollStatus, 1000);
                             } else {
-                                modalContent.className = '';
-                                modalContent.textContent = _('Connection timeout - still connecting in background');
-                                setTimeout(function() { ui.hideModal(); }, 2000);
-                            }
-                        } else if (status && status.state === 'disconnected') {
-                            modalContent.className = '';
-                            modalContent.textContent = _('Connection failed - disconnected');
-                            setTimeout(function() {
-                                ui.hideModal();
-                                updateStatus();
-                            }, 2000);
-                        } else {
-                            // Unknown state, keep polling
-                            if (pollCount < maxPolls) {
-                                setTimeout(pollStatus, 1000);
-                            } else {
-                                ui.hideModal();
                                 updateStatus();
                             }
-                        }
-                    }).catch(function(err) {
-                        if (pollCount < maxPolls) {
-                            setTimeout(pollStatus, 1000);
                         } else {
-                            modalContent.className = '';
-                            modalContent.textContent = _('Status check error: ') + err.message;
-                            setTimeout(function() { ui.hideModal(); }, 2000);
+                            updateStatus();
                         }
+                    }).catch(function() {
+                        if (pollCount < maxPolls) setTimeout(pollStatus, 1000);
+                        else updateStatus();
                     });
                 };
 
-                // Start polling after a brief delay
                 setTimeout(pollStatus, 1000);
-
             }).catch(function(err) {
-                ui.hideModal();
-                ui.addNotification(null, E('p', {}, _('Connection error: ') + err.message), 'error');
+                showToast('Connection error: ' + err.message, 'error');
+                updateStatus();
             });
-        }, this);
+        };
 
-        var handleDisconnect = L.bind(function() {
-            return callDisconnect().then(function(result) {
+        var handleDisconnect = function() {
+            // Set disconnecting state immediately to show animation
+            if (statusHero) statusHero.className = 'nym-status-hero disconnecting';
+            if (statusLabel) statusLabel.textContent = 'Disconnecting';
+            if (actionBtn) actionBtn.disabled = true;
+
+            callDisconnect().then(function(result) {
                 if (result && result.success) {
-                    ui.addNotification(null, E('p', {}, _('Disconnected successfully')));
                     updateStatus();
-                    updateGatewayDisplay();
                 } else {
-                    ui.addNotification(null, E('p', {}, _('Disconnect failed: ') + (result.error || 'Unknown error')), 'error');
+                    showToast('Disconnect failed: ' + (result.error || 'Unknown'), 'error');
+                    updateStatus();
                 }
             }).catch(function(err) {
-                ui.addNotification(null, E('p', {}, _('Disconnect error: ') + err.message), 'error');
+                showToast('Disconnect error: ' + err.message, 'error');
+                updateStatus();
             });
-        }, this);
+        };
 
-        // Load gateways when country is selected
-        var loadGatewaysForCountry = L.bind(function(country, type, container) {
+        // Toggle card expand/collapse
+        var toggleCard = function(card) {
+            card.classList.toggle('expanded');
+        };
+
+        // Get quality indicator SVG based on performance
+        var getQualityIcon = function(performance) {
+            var perf = (performance || '').toLowerCase();
+            if (perf.indexOf('high') >= 0) return svgAssets.qualityHigh;
+            if (perf.indexOf('medium') >= 0) return svgAssets.qualityMedium;
+            if (perf.indexOf('offline') >= 0) return svgAssets.qualityOffline;
+            return svgAssets.qualityLow;
+        };
+
+        // Load gateways for selected country
+        var loadGatewaysForCountry = function(country, type, container) {
             if (!country || country === 'none') {
-                dom.content(container, E('p', { 'style': 'font-style: italic; opacity: 0.7' },
-                    _('Select a country to see available gateways')));
+                dom.content(container, E('div', { 'class': 'nym-gateway-loading' }, 'Select a country above'));
                 return;
             }
 
             if (country === 'random') {
-                dom.content(container, E('p', { 'style': 'font-style: italic; opacity: 0.7' },
-                    _('Random gateway will be selected automatically')));
+                dom.content(container, E('div', { 'class': 'nym-gateway-loading' }, '🌐 Random gateway will be selected'));
                 return;
             }
 
-            dom.content(container, E('p', { 'class': 'spinning' }, _('Loading gateways...')));
+            dom.content(container, E('div', { 'class': 'nym-gateway-loading' }, 'Loading gateways...'));
 
-            return callGatewayListByCountry(type, country).then(function(result) {
+            callGatewayListByCountry(type, country).then(function(result) {
                 if (!result || !result.gateways || result.gateways.length === 0) {
-                    dom.content(container, E('p', { 'style': 'color: #999' },
-                        _('No gateways found for this country')));
+                    dom.content(container, E('div', { 'class': 'nym-gateway-loading' }, 'No gateways available'));
                     return;
                 }
 
-                // Sort gateways: High -> Medium -> Low -> Offline
-                var sortedGateways = result.gateways.slice().sort(function(a, b) {
-                    var perfA = (a.performance || '').toLowerCase();
-                    var perfB = (b.performance || '').toLowerCase();
-
-                    var scoreA = perfA.indexOf('offline') >= 0 ? 0 :
-                                 perfA.indexOf('low') >= 0 ? 1 :
-                                 perfA.indexOf('medium') >= 0 ? 2 :
-                                 perfA.indexOf('high') >= 0 ? 3 : 1;
-
-                    var scoreB = perfB.indexOf('offline') >= 0 ? 0 :
-                                 perfB.indexOf('low') >= 0 ? 1 :
-                                 perfB.indexOf('medium') >= 0 ? 2 :
-                                 perfB.indexOf('high') >= 0 ? 3 : 1;
-
-                    return scoreB - scoreA; // Higher score first
+                var sorted = result.gateways.slice().sort(function(a, b) {
+                    var scoreA = (a.performance || '').indexOf('High') >= 0 ? 3 :
+                                 (a.performance || '').indexOf('Medium') >= 0 ? 2 :
+                                 (a.performance || '').indexOf('Offline') >= 0 ? 0 : 1;
+                    var scoreB = (b.performance || '').indexOf('High') >= 0 ? 3 :
+                                 (b.performance || '').indexOf('Medium') >= 0 ? 2 :
+                                 (b.performance || '').indexOf('Offline') >= 0 ? 0 : 1;
+                    return scoreB - scoreA;
                 });
 
-                var options = [E('option', { 'value': '' }, '-- Any Gateway (Random) --')];
+                var inputName = type === 'mixnet-entry' ? 'entry_gateway_id' : 'exit_gateway_id';
+                var gatewayList = E('div', { 'class': 'nym-gateway-list' });
 
-                sortedGateways.forEach(function(gw) {
-                    // Safe access to properties with defaults
-                    var perf = gw.performance || '';
-                    var gwName = gw.name || 'Unknown';
-                    var gwLocation = gw.location || '';
-                    var gwId = gw.id || '';
-
-                    // Format: "🟢 gateway-name - Performance"
-                    var perfIcon = perf.indexOf('High') >= 0 ? '🟢' :
-                                   perf.indexOf('Medium') >= 0 ? '🟡' :
-                                   perf.indexOf('Offline') >= 0 ? '⚫' : '🔴';
-
-                    var label = perfIcon + ' ' + gwName.substring(0, 40);
-                    if (perf) {
-                        label += ' - ' + perf.substring(0, 35);
-                    }
-
-                    var title = gwLocation;
-                    if (perf) {
-                        title += ' | ' + perf;
-                    }
-
-                    options.push(E('option', { 'value': gwId, 'title': title }, label));
+                // Add "Any (Random)" option first
+                var randomOption = E('label', { 'class': 'nym-gateway-option selected' }, [
+                    E('input', { 'type': 'radio', 'name': inputName, 'value': '', 'checked': 'checked' }),
+                    E('div', { 'class': 'nym-gateway-option-info' }, [
+                        E('div', { 'class': 'nym-gateway-option-name' }, '🎲 Any Gateway (Random)')
+                    ])
+                ]);
+                randomOption.addEventListener('click', function() {
+                    container.querySelectorAll('.nym-gateway-option').forEach(function(el) {
+                        el.classList.remove('selected');
+                    });
+                    randomOption.classList.add('selected');
                 });
+                gatewayList.appendChild(randomOption);
 
-                var select = E('select', {
-                    'class': 'cbi-input-select',
-                    'name': type === 'mixnet-entry' ? 'entry_gateway_id' : 'exit_gateway_id',
-                    'style': 'width: 100%; max-width: 600px'
-                }, options);
+                // Add gateway options
+                sorted.forEach(function(gw) {
+                    var perf = gw.performance || 'Unknown';
+                    var iconDiv = E('div', { 'class': 'nym-gateway-option-icon' });
+                    iconDiv.innerHTML = getQualityIcon(perf);
+
+                    var option = E('label', { 'class': 'nym-gateway-option' }, [
+                        E('input', { 'type': 'radio', 'name': inputName, 'value': gw.id || '' }),
+                        iconDiv,
+                        E('div', { 'class': 'nym-gateway-option-info' }, [
+                            E('div', { 'class': 'nym-gateway-option-name' }, gw.name || 'Unknown'),
+                            E('div', { 'class': 'nym-gateway-option-perf' }, perf)
+                        ])
+                    ]);
+                    option.addEventListener('click', function() {
+                        container.querySelectorAll('.nym-gateway-option').forEach(function(el) {
+                            el.classList.remove('selected');
+                        });
+                        option.classList.add('selected');
+                    });
+                    gatewayList.appendChild(option);
+                });
 
                 dom.content(container, [
-                    E('div', { 'style': 'margin-top: 10px' }, [
-                        E('label', { 'style': 'font-weight: bold' },
-                            _(type === 'mixnet-entry' ? 'Select Entry Gateway:' : 'Select Exit Gateway:')),
-                        E('div', { 'style': 'margin-top: 5px' }, select),
-                        E('div', { 'style': 'margin-top: 5px; font-size: 0.9em; opacity: 0.7' },
-                            _('Found ') + result.gateways.length + _(' gateways. Leave blank for random selection.'))
-                    ])
+                    E('label', { 'class': 'nym-form-label' }, 'Gateway'),
+                    gatewayList,
+                    E('div', { 'style': 'font-size: 11px; color: var(--text-muted); margin-top: 8px' },
+                        result.gateways.length + ' gateways available')
                 ]);
             }).catch(function(err) {
-                dom.content(container, E('p', { 'style': 'color: red' },
-                    _('Error loading gateways: ') + err.message));
+                dom.content(container, E('div', { 'class': 'nym-gateway-loading', 'style': 'color: var(--danger)' },
+                    'Error: ' + err.message));
             });
-        }, this);
+        };
 
-        var handleGatewayUpdate = L.bind(function(ev) {
+        // Create country select
+        var createCountrySelect = function(countries, name, onSelect) {
+            var options = [E('option', { 'value': 'none' }, '— Select Country —')];
+            options.push(E('option', { 'value': 'random' }, '🌐 Random'));
+
+            countries.forEach(function(c) {
+                var info = getCountryDisplay(c.code);
+                options.push(E('option', { 'value': c.code },
+                    info.flag + ' ' + info.name + ' (' + c.count + ')'));
+            });
+
+            return E('select', {
+                'class': 'nym-select',
+                'name': name,
+                'change': onSelect
+            }, options);
+        };
+
+        // Gateway update handler
+        var handleGatewayUpdate = function(ev) {
             ev.preventDefault();
+            var form = ev.target;
+            var fd = new FormData(form);
 
-            var formData = new FormData(ev.target);
-            var entry_country = formData.get('entry_country');
-            var exit_country = formData.get('exit_country');
-            var entry_gateway_id = formData.get('entry_gateway_id');
-            var exit_gateway_id = formData.get('exit_gateway_id');
-            var residential_exit = formData.get('residential_exit');
+            var entry_country = fd.get('entry_country');
+            var exit_country = fd.get('exit_country');
+            var entry_id = fd.get('entry_gateway_id');
+            var exit_id = fd.get('exit_gateway_id');
+            var residential = fd.get('residential_exit');
 
-            // Clean up values
+            var entry_random = false;
+            var exit_random = false;
+
             if (entry_country === 'none') entry_country = null;
             if (exit_country === 'none') exit_country = null;
-            if (entry_country === 'random') {
-                entry_country = null;
-                entry_gateway_id = null;
-            }
-            if (exit_country === 'random') {
-                exit_country = null;
-                exit_gateway_id = null;
-            }
+            if (entry_country === 'random') { entry_country = null; entry_id = null; entry_random = true; }
+            if (exit_country === 'random') { exit_country = null; exit_id = null; exit_random = true; }
+            if (entry_id) entry_country = null;
+            if (exit_id) exit_country = null;
 
-            // If specific gateway selected, clear country (ID takes precedence)
-            if (entry_gateway_id) entry_country = null;
-            if (exit_gateway_id) exit_country = null;
+            callGatewaySet(entry_country, exit_country, entry_id || null, exit_id || null, entry_random, exit_random, residential || null)
+                .then(function(result) {
+                    if (result && result.success) {
+                        showToast('Gateway configuration saved', 'success');
+                    } else {
+                        showToast('Failed: ' + (result.error || 'Unknown'), 'error');
+                    }
+                }).catch(function(err) {
+                    showToast('Error: ' + err.message, 'error');
+                });
+        };
 
-            return callGatewaySet(
-                entry_country,
-                exit_country,
-                entry_gateway_id || null,
-                exit_gateway_id || null,
-                false, // entry_random
-                false, // exit_random
-                residential_exit || null
-            ).then(function(result) {
+        // Tunnel update handler
+        var handleTunnelUpdate = function(ev) {
+            ev.preventDefault();
+            var ipv6 = ev.target.querySelector('#ipv6-toggle').checked ? 'on' : 'off';
+            var two_hop = ev.target.querySelector('#two-hop-toggle').checked ? 'on' : 'off';
+
+            callTunnelSet(ipv6, two_hop).then(function(result) {
                 if (result && result.success) {
-                    ui.addNotification(null, E('p', {}, _('Gateway configuration updated')));
+                    showToast('Tunnel settings saved', 'success');
                 } else {
-                    ui.addNotification(null, E('p', {}, _('Update failed: ') + (result.error || 'Unknown error')), 'error');
+                    showToast('Failed: ' + (result.error || 'Unknown'), 'error');
                 }
             }).catch(function(err) {
-                ui.addNotification(null, E('p', {}, _('Update error: ') + err.message), 'error');
+                showToast('Error: ' + err.message, 'error');
             });
-        }, this);
+        };
 
-        var handleTunnelUpdate = L.bind(function(ev) {
+        // Account handlers
+        var handleAccountLogin = function(ev) {
             ev.preventDefault();
-
-            var ipv6Checkbox = ev.target.querySelector('#ipv6-toggle');
-            var twoHopCheckbox = ev.target.querySelector('#two-hop-toggle');
-
-            var ipv6 = ipv6Checkbox && ipv6Checkbox.checked ? 'on' : 'off';
-            var two_hop = twoHopCheckbox && twoHopCheckbox.checked ? 'on' : 'off';
-
-            return callTunnelSet(ipv6, two_hop).then(function(result) {
-                if (result && result.success) {
-                    ui.addNotification(null, E('p', {}, _('Tunnel configuration updated')));
-                    // Update display values
-                    var ipv6Display = document.getElementById('tunnel-ipv6-display');
-                    var twoHopDisplay = document.getElementById('tunnel-twohop-display');
-                    if (ipv6Display) ipv6Display.textContent = ipv6;
-                    if (twoHopDisplay) twoHopDisplay.textContent = two_hop;
-                } else {
-                    ui.addNotification(null, E('p', {}, _('Update failed: ') + (result.error || 'Unknown error')), 'error');
-                }
-            }).catch(function(err) {
-                ui.addNotification(null, E('p', {}, _('Update error: ') + err.message), 'error');
-            });
-        }, this);
-
-        var handleAccountLogin = L.bind(function(ev) {
-            ev.preventDefault();
-
-            var formData = new FormData(ev.target);
-            var mnemonic = formData.get('mnemonic');
-            var mode = formData.get('mode') || 'api';
+            var fd = new FormData(ev.target);
+            var mnemonic = fd.get('mnemonic');
+            var mode = fd.get('mode') || 'api';
 
             if (!mnemonic) {
-                ui.addNotification(null, E('p', {}, _('Mnemonic is required')), 'error');
+                showToast('Recovery phrase is required', 'error');
                 return;
             }
 
-            ui.showModal(_('Logging in'), [
-                E('p', { 'class': 'spinning' }, _('Setting up account...'))
-            ]);
-
-            return callAccountSet(mnemonic, mode).then(function(result) {
-                ui.hideModal();
+            callAccountSet(mnemonic, mode).then(function(result) {
                 if (result && result.success) {
-                    ui.addNotification(null, E('p', {}, _('Account set successfully. Refreshing...')));
+                    showToast('Account configured', 'success');
                     setTimeout(function() { location.reload(); }, 1000);
                 } else {
-                    ui.addNotification(null, E('p', {}, _('Login failed: ') + (result.error || 'Unknown error')), 'error');
+                    showToast('Failed: ' + (result.error || 'Unknown'), 'error');
                 }
             }).catch(function(err) {
-                ui.hideModal();
-                ui.addNotification(null, E('p', {}, _('Login error: ') + err.message), 'error');
+                showToast('Error: ' + err.message, 'error');
             });
-        }, this);
+        };
 
-        var handleAccountLogout = L.bind(function() {
-            ui.showModal(_('Confirm Logout'), [
-                E('p', {}, _('Are you sure you want to forget this account? You will need to re-enter your mnemonic to connect again.')),
-                E('div', { 'class': 'right' }, [
-                    E('button', {
-                        'class': 'btn',
-                        'click': ui.hideModal
-                    }, _('Cancel')),
-                    ' ',
-                    E('button', {
-                        'class': 'btn cbi-button-negative',
-                        'click': function() {
-                            ui.hideModal();
-                            ui.showModal(_('Logging out'), [
-                                E('p', { 'class': 'spinning' }, _('Forgetting account...'))
-                            ]);
+        var handleAccountLogout = function() {
+            callAccountForget().then(function(result) {
+                if (result && result.success) {
+                    showToast('Account removed', 'success');
+                    setTimeout(function() { location.reload(); }, 1000);
+                } else {
+                    showToast('Failed: ' + (result.error || 'Unknown'), 'error');
+                }
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        };
 
-                            callAccountForget().then(function(result) {
-                                ui.hideModal();
-                                if (result && result.success) {
-                                    ui.addNotification(null, E('p', {}, _('Account forgotten. Refreshing...')));
-                                    setTimeout(function() { location.reload(); }, 1000);
-                                } else {
-                                    ui.addNotification(null, E('p', {}, _('Logout failed: ') + (result.error || 'Unknown error')), 'error');
-                                }
-                            }).catch(function(err) {
-                                ui.hideModal();
-                                ui.addNotification(null, E('p', {}, _('Logout error: ') + err.message), 'error');
-                            });
-                        }
-                    }, _('Logout'))
-                ])
-            ]);
-        }, this);
-
-        var handleRotateKeys = L.bind(function() {
-            // First check if connected
-            callStatus().then(function(status) {
-                if (status && (status.state === 'connected' || status.state === 'connecting')) {
-                    ui.showModal(_('Cannot Rotate Keys'), [
-                        E('p', {}, _('You must disconnect from the VPN before rotating keys.')),
-                        E('div', { 'class': 'right' }, [
-                            E('button', {
-                                'class': 'btn cbi-button-action',
-                                'click': ui.hideModal
-                            }, _('OK'))
-                        ])
-                    ]);
+        var handleRotateKeys = function() {
+            callStatus().then(function(st) {
+                if (st && (st.state === 'connected' || st.state === 'connecting')) {
+                    showToast('Please disconnect before rotating keys', 'warning');
                     return;
                 }
 
-                ui.showModal(_('Rotating Keys'), [
-                    E('p', { 'class': 'spinning' }, _('Rotating WireGuard keys...'))
-                ]);
-
+                showModal('Rotating Keys', 'Generating new keys...', '🔑');
                 callAccountRotateKeys().then(function(result) {
-                    ui.hideModal();
+                    hideModal();
                     if (result && result.success) {
-                        ui.addNotification(null, E('p', {}, _('Keys rotated successfully')));
+                        showToast('Keys rotated successfully', 'success');
                     } else {
-                        ui.addNotification(null, E('p', {}, _('Key rotation failed: ') + (result.error || 'Unknown error')), 'error');
+                        showToast('Failed: ' + (result.error || 'Unknown'), 'error');
                     }
                 }).catch(function(err) {
-                    ui.hideModal();
-                    ui.addNotification(null, E('p', {}, _('Key rotation error: ') + err.message), 'error');
+                    hideModal();
+                    showToast('Error: ' + err.message, 'error');
                 });
             });
-        }, this);
-
-        var handleLanPolicy = L.bind(function(policy) {
-            return callLanSet(policy).then(function(result) {
-                if (result && result.success) {
-                    ui.addNotification(null, E('p', {}, _('LAN policy updated to: ') + policy));
-                } else {
-                    ui.addNotification(null, E('p', {}, _('Update failed: ') + (result.error || 'Unknown error')), 'error');
-                }
-            }).catch(function(err) {
-                ui.addNotification(null, E('p', {}, _('Update error: ') + err.message), 'error');
-            });
-        }, this);
-
-        // Helper function to create country dropdown
-        var createCountrySelect = function(countries, name, label, gatewayType, container) {
-            var options = [E('option', { 'value': 'none' }, '-- Select Country --')];
-
-            countries.forEach(function(country) {
-                var countryName = countryNames[country.code] || country.code;
-                var label = countryName + ' (' + country.code + ') - ' + country.count + ' gateways';
-                options.push(E('option', { 'value': country.code }, label));
-            });
-
-            options.push(E('option', { 'value': 'random' }, '🎲 Random Country'));
-
-            var select = E('select', {
-                'name': name,
-                'class': 'cbi-input-select',
-                'change': function(ev) {
-                    loadGatewaysForCountry(ev.target.value, gatewayType, container);
-                }
-            }, options);
-
-            return E('div', { 'class': 'cbi-value' }, [
-                E('label', { 'class': 'cbi-value-title' }, _(label)),
-                E('div', { 'class': 'cbi-value-field' }, select)
-            ]);
         };
 
-        // Refresh gateways function
-        var refreshGateways = L.bind(function(btn) {
-            console.log('Refresh gateways clicked');
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = _('Refreshing...');
-            }
-
-            return Promise.all([
-                callGatewayListCountries('mixnet-entry'),
-                callGatewayListCountries('mixnet-exit')
-            ]).then(function(results) {
-                console.log('Gateway refresh results:', results);
-                var entry_countries = (results[0] && results[0].countries) || [];
-                var exit_countries = (results[1] && results[1].countries) || [];
-                console.log('Entry countries:', entry_countries.length, 'Exit countries:', exit_countries.length);
-
-                // Update info text
-                if (gatewayInfoText) {
-                    console.log('Updating gateway info text');
-                    dom.content(gatewayInfoText, [
-                        _('Choose entry and exit gateways. You can select by country or pick specific gateways.'),
-                        E('br'),
-                        _('Available: ') + entry_countries.length + _(' entry countries, ') + exit_countries.length + _(' exit countries')
-                    ]);
-                }
-
-                // Rebuild entry country dropdown
-                if (entryCountrySelectContainer) {
-                    console.log('Rebuilding entry country dropdown');
-                    dom.content(entryCountrySelectContainer,
-                        createCountrySelect(entry_countries, 'entry_country', 'Country:', 'mixnet-entry', entryGatewaySelectContainer)
-                    );
+        // LAN policy handler
+        var handleLanPolicy = function(policy) {
+            callLanSet(policy).then(function(result) {
+                if (result && result.success) {
+                    showToast('LAN policy set to: ' + policy, 'success');
+                    var display = document.getElementById('lan-policy-display');
+                    if (display) display.textContent = policy;
                 } else {
-                    console.warn('entryCountrySelectContainer not found');
+                    showToast('Failed: ' + (result.error || 'Unknown'), 'error');
                 }
-
-                // Rebuild exit country dropdown
-                if (exitCountrySelectContainer) {
-                    console.log('Rebuilding exit country dropdown');
-                    dom.content(exitCountrySelectContainer,
-                        createCountrySelect(exit_countries, 'exit_country', 'Country:', 'mixnet-exit', exitGatewaySelectContainer)
-                    );
-                } else {
-                    console.warn('exitCountrySelectContainer not found');
-                }
-
-                // Reset gateway containers
-                if (entryGatewaySelectContainer) {
-                    console.log('Resetting entry gateway container');
-                    dom.content(entryGatewaySelectContainer, [
-                        E('p', { 'style': 'font-style: italic; opacity: 0.7' }, _('Select a country to see available gateways'))
-                    ]);
-                }
-                if (exitGatewaySelectContainer) {
-                    console.log('Resetting exit gateway container');
-                    dom.content(exitGatewaySelectContainer, [
-                        E('p', { 'style': 'font-style: italic; opacity: 0.7' }, _('Select a country to see available gateways'))
-                    ]);
-                }
-
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = _('Refresh Gateways');
-                }
-
-                console.log('Gateway refresh complete');
-                ui.addNotification(null, E('p', {}, _('Gateway list refreshed successfully')), 'info');
             }).catch(function(err) {
-                console.error('Gateway refresh error:', err);
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = _('Refresh Gateways');
-                }
-                ui.addNotification(null, E('p', {}, _('Failed to refresh gateways: ') + err.message), 'error');
+                showToast('Error: ' + err.message, 'error');
             });
-        }, this);
+        };
 
-        // Build UI
-        var m = E('div', { 'class': 'cbi-map' }, [
-            E('style', {}, `
-                .cbi-map .btn.cbi-button.btn-green,
-                .cbi-map .btn.cbi-button.btn-green:link,
-                .cbi-map .btn.cbi-button.btn-green:visited {
-                    background-color: #5cb85c !important;
-                    border-color: #4cae4c !important;
-                    color: white !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                }
-                .cbi-map .btn.cbi-button.btn-green:hover,
-                .cbi-map .btn.cbi-button.btn-green:focus {
-                    background-color: #449d44 !important;
-                    border-color: #398439 !important;
-                    color: white !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                }
-                .cbi-map .btn.cbi-button.btn-green:active {
-                    background-color: #398439 !important;
-                    border-color: #255625 !important;
-                    color: white !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                }
-                .cbi-map .btn.cbi-button.btn-red,
-                .cbi-map .btn.cbi-button.btn-red:link,
-                .cbi-map .btn.cbi-button.btn-red:visited {
-                    background-color: #d9534f !important;
-                    border-color: #d43f3a !important;
-                    color: white !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                }
-                .cbi-map .btn.cbi-button.btn-red:hover,
-                .cbi-map .btn.cbi-button.btn-red:focus {
-                    background-color: #c9302c !important;
-                    border-color: #ac2925 !important;
-                    color: white !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                }
-                .cbi-map .btn.cbi-button.btn-red:active {
-                    background-color: #ac2925 !important;
-                    border-color: #761c19 !important;
-                    color: white !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                }
-                .cbi-map .btn.cbi-button.btn-blue,
-                .cbi-map .btn.cbi-button.btn-blue:link,
-                .cbi-map .btn.cbi-button.btn-blue:visited {
-                    background-color: #5bc0de !important;
-                    border-color: #46b8da !important;
-                    color: white !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                }
-                .cbi-map .btn.cbi-button.btn-blue:hover,
-                .cbi-map .btn.cbi-button.btn-blue:focus {
-                    background-color: #31b0d5 !important;
-                    border-color: #269abc !important;
-                    color: white !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                }
-                .cbi-map .btn.cbi-button.btn-blue:active {
-                    background-color: #269abc !important;
-                    border-color: #1b6d85 !important;
-                    color: white !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                }
-            `),
-            E('h2', {}, _('Nym VPN')),
-            E('div', { 'class': 'cbi-map-descr' },
-                _('Privacy-focused VPN powered by the Nym mixnet'))
-        ]);
+        // Check if logged in
+        var identity = account_info.identity || '';
+        var state = account_info.state || '';
+        var invalidIdentities = ['', 'Not set', 'LoggedOut', 'unset', 'none'];
+        var hasError = state.indexOf('Error') >= 0 || identity.indexOf('Error') >= 0;
+        var isLoggedIn = identity && invalidIdentities.indexOf(identity) === -1 && !hasError;
 
-        // Status Section
-        statusSection = E('div', { 'class': 'cbi-section' }, [
-            E('h3', {}, _('Connection Status')),
-            E('div', { 'class': 'cbi-section-node' }, [
-                E('div', { 'class': 'table' }, [
-                    E('div', { 'class': 'tr' }, [
-                        E('div', { 'class': 'td left', 'style': 'width:33%' }, _('Status:')),
-                        E('div', { 'class': 'td left' }, [
-                            statusText = E('span', { 'id': 'vpn-status' }, _('Loading...'))
-                        ])
-                    ]),
-                    E('div', { 'class': 'tr' }, [
-                        E('div', { 'class': 'td left' }, _('Uptime:')),
-                        E('div', { 'class': 'td left' }, [
-                            uptimeDisplay = E('span', { 'id': 'vpn-uptime' }, '-')
-                        ])
-                    ]),
-                    E('div', { 'class': 'tr' }, [
-                        E('div', { 'class': 'td left' }, _('Version:')),
-                        E('div', { 'class': 'td left' }, info.version || 'Unknown')
-                    ]),
-                    E('div', { 'class': 'tr' }, [
-                        E('div', { 'class': 'td left' }, _('Network:')),
-                        E('div', { 'class': 'td left' }, network.network || info.network || 'Unknown')
+        // ═══════════════════════════════════════════════════════════════
+        // BUILD UI
+        // ═══════════════════════════════════════════════════════════════
+
+        var container = E('div', { 'class': 'nym-container' }, [
+            E('style', {}, themeCSS),
+
+            // Header
+            (function() {
+                var header = E('div', { 'class': 'nym-header' });
+                var logoDiv = E('div', { 'class': 'nym-logo' });
+                logoDiv.innerHTML = svgAssets.logo;
+                header.appendChild(logoDiv);
+                header.appendChild(E('div', { 'class': 'nym-subtitle' }, 'The world\'s most private VPN'));
+                return header;
+            })(),
+
+            // Status Hero
+            statusHero = E('div', { 'class': 'nym-status-hero disconnected' }, [
+                E('div', { 'class': 'nym-status-ring' }, [
+                    E('div', { 'class': 'nym-status-ring-pulse' }),
+                    E('div', { 'class': 'nym-status-ring-outer' }),
+                    E('div', { 'class': 'nym-status-ring-inner' }, [
+                        statusLabel = E('div', { 'class': 'nym-status-label' }, 'Disconnected')
                     ])
                 ]),
-                E('div', { 'class': 'cbi-section-node', 'style': 'margin-top: 10px' }, [
-                    connectBtn = E('button', {
-                        'class': 'btn cbi-button btn-green',
+                E('div', { 'class': 'nym-uptime' }, [
+                    uptimeDisplay = E('span', {}, '--:--')
+                ]),
+                E('div', { 'class': 'nym-uptime-label' }, 'Session Duration'),
+                E('div', { 'class': 'nym-gateway-display' }, [
+                    E('div', { 'class': 'nym-gateway-item' }, [
+                        E('div', { 'class': 'nym-gateway-label' }, 'Entry'),
+                        entryGatewayDisplay = E('div', { 'class': 'nym-gateway-value' }, [
+                            E('div', { 'class': 'nym-gateway-empty' }, '—')
+                        ])
+                    ]),
+                    E('div', { 'class': 'nym-gateway-item' }, [
+                        E('div', { 'class': 'nym-gateway-label' }, 'Exit'),
+                        exitGatewayDisplay = E('div', { 'class': 'nym-gateway-value' }, [
+                            E('div', { 'class': 'nym-gateway-empty' }, '—')
+                        ])
+                    ])
+                ]),
+                E('div', { 'class': 'nym-action-buttons' }, [
+                    actionBtn = E('button', {
+                        'class': 'nym-btn nym-btn-primary',
                         'click': handleConnect
-                    }, _('Connect')),
-                    ' ',
-                    disconnectBtn = E('button', {
-                        'class': 'btn cbi-button btn-red',
-                        'click': handleDisconnect
-                    }, _('Disconnect'))
+                    }, 'Connect')
                 ])
             ])
         ]);
 
-        // Account Section
-        var isLoggedIn = account_info.identity && account_info.identity !== 'Not set' && account_info.identity !== '';
+        // Gateway Selection Card
+        entryGatewayContainer = E('div', { 'class': 'nym-form-group' },
+            E('div', { 'class': 'nym-gateway-loading' }, 'Select a country above'));
+        exitGatewayContainer = E('div', { 'class': 'nym-form-group' },
+            E('div', { 'class': 'nym-gateway-loading' }, 'Select a country above'));
 
-        var accountSection = E('div', { 'class': 'cbi-section' }, [
-            E('h3', {}, _('Account')),
-            E('div', { 'class': 'cbi-section-node' }, [
-                E('div', { 'class': 'table' }, [
-                    E('div', { 'class': 'tr' }, [
-                        E('div', { 'class': 'td left', 'style': 'width:33%' }, _('Account ID:')),
-                        E('div', { 'class': 'td left' }, [
-                            E('span', { 'id': 'account-identity' }, account_info.identity || 'Not set')
-                        ])
-                    ]),
-                    E('div', { 'class': 'tr' }, [
-                        E('div', { 'class': 'td left' }, _('Account State:')),
-                        E('div', { 'class': 'td left' }, [
-                            E('span', { 'id': 'account-state' }, account_info.state || 'Unknown')
-                        ])
-                    ])
+        var gatewayCard = E('div', { 'class': 'nym-card' }, [
+            E('div', { 'class': 'nym-card-header', 'click': function() { toggleCard(gatewayCard); } }, [
+                E('div', { 'class': 'nym-card-title' }, [
+                    E('div', { 'class': 'nym-card-icon' }, '⬡'),
+                    'Gateway Selection'
                 ]),
-                isLoggedIn ? E('div', { 'class': 'cbi-section-node', 'style': 'margin-top: 15px' }, [
-                    E('button', {
-                        'class': 'btn cbi-button btn-blue',
-                        'click': handleRotateKeys
-                    }, _('Rotate Keys')),
-                    ' ',
-                    E('button', {
-                        'class': 'btn cbi-button btn-red',
-                        'click': handleAccountLogout
-                    }, _('Logout'))
-                ]) : E('form', { 'submit': handleAccountLogin }, [
-                    E('div', { 'class': 'cbi-value' }, [
-                        E('label', { 'class': 'cbi-value-title' }, _('Mnemonic:')),
-                        E('div', { 'class': 'cbi-value-field' }, [
-                            E('input', {
-                                'type': 'password',
-                                'name': 'mnemonic',
-                                'class': 'cbi-input-text',
-                                'placeholder': 'Enter your mnemonic phrase'
-                            })
+                E('div', { 'class': 'nym-card-chevron' }, '▼')
+            ]),
+            E('div', { 'class': 'nym-card-body' }, [
+                E('div', { 'class': 'nym-card-description' },
+                    'Choose your entry and exit points in the Nym mixnet. Entry is where your traffic enters, exit is where it emerges.'),
+                E('form', { 'submit': handleGatewayUpdate }, [
+                    E('div', { 'class': 'nym-gateway-section' }, [
+                        E('div', { 'class': 'nym-gateway-box' }, [
+                            E('div', { 'class': 'nym-gateway-box-title' }, 'Entry Point'),
+                            E('div', { 'class': 'nym-form-group' }, [
+                                E('label', { 'class': 'nym-form-label' }, 'Country'),
+                                entryCountrySelect = createCountrySelect(entry_countries, 'entry_country', function(ev) {
+                                    loadGatewaysForCountry(ev.target.value, 'mixnet-entry', entryGatewayContainer);
+                                })
+                            ]),
+                            entryGatewayContainer
+                        ]),
+                        E('div', { 'class': 'nym-gateway-box' }, [
+                            E('div', { 'class': 'nym-gateway-box-title' }, 'Exit Point'),
+                            E('div', { 'class': 'nym-form-group' }, [
+                                E('label', { 'class': 'nym-form-label' }, 'Country'),
+                                exitCountrySelect = createCountrySelect(exit_countries, 'exit_country', function(ev) {
+                                    loadGatewaysForCountry(ev.target.value, 'mixnet-exit', exitGatewayContainer);
+                                })
+                            ]),
+                            exitGatewayContainer
                         ])
                     ]),
-                    E('div', { 'class': 'cbi-value' }, [
-                        E('label', { 'class': 'cbi-value-title' }, _('Mode:')),
-                        E('div', { 'class': 'cbi-value-field' }, [
-                            E('select', { 'name': 'mode', 'class': 'cbi-input-select' }, [
-                                E('option', { 'value': 'api' }, 'API'),
-                                E('option', { 'value': 'decentralised' }, 'Decentralised')
-                            ])
+                    E('div', { 'class': 'nym-form-group' }, [
+                        E('label', { 'class': 'nym-form-label' }, 'Residential Exit'),
+                        E('select', { 'class': 'nym-select', 'name': 'residential_exit' }, [
+                            E('option', { 'value': '' }, '— No change —'),
+                            E('option', { 'value': 'on' }, 'Enabled'),
+                            E('option', { 'value': 'off' }, 'Disabled')
                         ])
                     ]),
-                    E('div', { 'class': 'cbi-section-node', 'style': 'margin-top: 10px' }, [
-                        E('button', {
-                            'type': 'submit',
-                            'class': 'btn cbi-button btn-green'
-                        }, _('Login'))
-                    ])
+                    E('button', { 'type': 'submit', 'class': 'nym-btn nym-btn-primary', 'style': 'width: 100%' },
+                        'Save Gateway Settings')
                 ])
             ])
         ]);
 
-        // Initialize gateway select containers
-        entryGatewaySelectContainer = E('div', { 'style': 'padding: 10px; border-radius: 4px; margin-top: 10px' }, [
-            E('p', { 'style': 'font-style: italic; opacity: 0.7' }, _('Select a country to see available gateways'))
-        ]);
-
-        exitGatewaySelectContainer = E('div', { 'style': 'padding: 10px; border-radius: 4px; margin-top: 10px' }, [
-            E('p', { 'style': 'font-style: italic; opacity: 0.7' }, _('Select a country to see available gateways'))
-        ]);
-
-        // Gateway Section - Now with improved dropdowns and specific gateway selection
-        var gatewaySection = E('div', { 'class': 'cbi-section' }, [
-            E('h3', {}, _('Gateway Selection')),
-            gatewayInfoText = E('div', { 'class': 'cbi-map-descr' }, [
-                _('Choose entry and exit gateways. You can select by country or pick specific gateways.'),
-                E('br'),
-                _('Available: ') + entry_countries.length + _(' entry countries, ') + exit_countries.length + _(' exit countries')
-            ]),
-            E('div', { 'class': 'cbi-section-node', 'style': 'margin-bottom: 10px' }, [
-                E('button', {
-                    'class': 'btn cbi-button btn-blue',
-                    'click': function(ev) {
-                        ev.preventDefault();
-                        refreshGateways(ev.target);
-                    }
-                }, _('Refresh Gateways'))
-            ]),
-            E('div', { 'class': 'cbi-section-node' }, [
-                E('div', { 'class': 'table' }, [
-                    E('div', { 'class': 'tr' }, [
-                        E('div', { 'class': 'td left', 'style': 'width:33%' }, _('Current Entry:')),
-                        E('div', { 'class': 'td left', 'id': 'current-entry-display' }, gateway_config.entry_point || 'Not set')
-                    ]),
-                    E('div', { 'class': 'tr' }, [
-                        E('div', { 'class': 'td left' }, _('Current Exit:')),
-                        E('div', { 'class': 'td left', 'id': 'current-exit-display' }, gateway_config.exit_point || 'Not set')
-                    ])
+        // Tunnel Configuration Card
+        var tunnelCard = E('div', { 'class': 'nym-card' }, [
+            E('div', { 'class': 'nym-card-header', 'click': function() { toggleCard(tunnelCard); } }, [
+                E('div', { 'class': 'nym-card-title' }, [
+                    E('div', { 'class': 'nym-card-icon' }, '⚙'),
+                    'Tunnel Settings'
                 ]),
-                E('form', { 'submit': handleGatewayUpdate, 'style': 'margin-top: 20px' }, [
-                    E('fieldset', { 'style': 'border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 4px' }, [
-                        E('legend', { 'style': 'font-weight: bold; padding: 0 10px' }, _('Entry Gateway')),
-                        entryCountrySelectContainer = E('div', {}, [
-                            createCountrySelect(entry_countries, 'entry_country', 'Country:', 'mixnet-entry', entryGatewaySelectContainer)
-                        ]),
-                        entryGatewaySelectContainer
-                    ]),
-                    E('fieldset', { 'style': 'border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 4px' }, [
-                        E('legend', { 'style': 'font-weight: bold; padding: 0 10px' }, _('Exit Gateway')),
-                        exitCountrySelectContainer = E('div', {}, [
-                            createCountrySelect(exit_countries, 'exit_country', 'Country:', 'mixnet-exit', exitGatewaySelectContainer)
-                        ]),
-                        exitGatewaySelectContainer
-                    ]),
-                    E('div', { 'class': 'cbi-value' }, [
-                        E('label', { 'class': 'cbi-value-title' }, _('Residential Exit:')),
-                        E('div', { 'class': 'cbi-value-field' }, [
-                            E('select', { 'name': 'residential_exit', 'class': 'cbi-input-select' }, [
-                                E('option', { 'value': '' }, '-- No change --'),
-                                E('option', { 'value': 'on' }, 'On'),
-                                E('option', { 'value': 'off' }, 'Off')
-                            ])
-                        ])
-                    ]),
-                    E('div', { 'class': 'cbi-section-node', 'style': 'margin-top: 10px' }, [
-                        E('button', {
-                            'type': 'submit',
-                            'class': 'btn cbi-button btn-green'
-                        }, _('Update Gateways'))
-                    ])
-                ])
-            ])
-        ]);
-
-        // Tunnel Configuration Section
-        var tunnelSection = E('div', { 'class': 'cbi-section' }, [
-            E('h3', {}, _('Tunnel Configuration')),
-            E('style', {}, `
-                .toggle-switch {
-                    position: relative;
-                    display: inline-block;
-                    width: 36px;
-                    height: 18px;
-                    vertical-align: middle;
-                }
-                .toggle-switch input {
-                    opacity: 0;
-                    width: 0;
-                    height: 0;
-                }
-                .toggle-slider {
-                    position: absolute;
-                    cursor: pointer;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background-color: #888;
-                    transition: .2s;
-                    border-radius: 18px;
-                }
-                .toggle-slider:before {
-                    position: absolute;
-                    content: "";
-                    height: 12px;
-                    width: 12px;
-                    left: 3px;
-                    bottom: 3px;
-                    background-color: white;
-                    transition: .2s;
-                    border-radius: 50%;
-                }
-                input:checked + .toggle-slider {
-                    background-color: #5cb85c;
-                }
-                input:checked + .toggle-slider:before {
-                    transform: translateX(18px);
-                }
-            `),
-            E('div', { 'class': 'cbi-section-node' }, [
+                E('div', { 'class': 'nym-card-chevron' }, '▼')
+            ]),
+            E('div', { 'class': 'nym-card-body' }, [
+                E('div', { 'class': 'nym-card-description' },
+                    'Configure how your traffic is routed through the mixnet.'),
                 E('form', { 'submit': handleTunnelUpdate }, [
-                    E('div', { 'class': 'table' }, [
-                        E('div', { 'class': 'tr' }, [
-                            E('div', { 'class': 'td left', 'style': 'width:33%' }, _('IPv6:')),
-                            E('div', { 'class': 'td left', 'style': 'width:33%', 'id': 'tunnel-ipv6-display' }, tunnel_config.ipv6 || 'Unknown'),
-                            E('div', { 'class': 'td left' }, [
-                                E('label', { 'class': 'toggle-switch' }, [
-                                    E('input', {
-                                        'type': 'checkbox',
-                                        'name': 'ipv6',
-                                        'id': 'ipv6-toggle',
-                                        'value': 'on',
-                                        'checked': (tunnel_config.ipv6 === 'on' || tunnel_config.ipv6 === 'true') ? 'checked' : null
-                                    }),
-                                    E('span', { 'class': 'toggle-slider' })
-                                ])
-                            ])
+                    E('div', { 'class': 'nym-toggle-row' }, [
+                        E('div', { 'class': 'nym-toggle-info' }, [
+                            E('div', { 'class': 'nym-toggle-title' }, 'IPv6 Support'),
+                            E('div', { 'class': 'nym-toggle-desc' }, 'Enable IPv6 addresses in the VPN tunnel')
                         ]),
-                        E('div', { 'class': 'tr' }, [
-                            E('div', { 'class': 'td left' }, _('Two-Hop Mode:')),
-                            E('div', { 'class': 'td left', 'id': 'tunnel-twohop-display' }, tunnel_config.two_hop || 'Unknown'),
-                            E('div', { 'class': 'td left' }, [
-                                E('label', { 'class': 'toggle-switch' }, [
-                                    E('input', {
-                                        'type': 'checkbox',
-                                        'name': 'two_hop',
-                                        'id': 'two-hop-toggle',
-                                        'value': 'on',
-                                        'checked': (tunnel_config.two_hop === 'on' || tunnel_config.two_hop === 'true') ? 'checked' : null
-                                    }),
-                                    E('span', { 'class': 'toggle-slider' })
-                                ])
-                            ])
-                        ]),
-                        E('div', { 'class': 'tr' }, [
-                            E('div', { 'class': 'td left' }, _('Netstack:')),
-                            E('div', { 'class': 'td left' }, tunnel_config.netstack || 'Unknown'),
-                            E('div', { 'class': 'td left' }, '')
-                        ]),
-                        E('div', { 'class': 'tr' }, [
-                            E('div', { 'class': 'td left' }, _('Circumvention Transports:')),
-                            E('div', { 'class': 'td left' }, tunnel_config.circumvention_transports || 'Unknown'),
-                            E('div', { 'class': 'td left' }, '')
+                        E('label', { 'class': 'nym-toggle' }, [
+                            E('input', {
+                                'type': 'checkbox',
+                                'id': 'ipv6-toggle',
+                                'checked': (tunnel_config.ipv6 === 'on' || tunnel_config.ipv6 === 'true') ? 'checked' : null
+                            }),
+                            E('span', { 'class': 'nym-toggle-slider' })
                         ])
                     ]),
-                    E('div', { 'class': 'cbi-section-node', 'style': 'margin-top: 10px' }, [
-                        E('button', {
-                            'type': 'submit',
-                            'class': 'btn cbi-button btn-green'
-                        }, _('Update Tunnel'))
-                    ])
+                    E('div', { 'class': 'nym-toggle-row' }, [
+                        E('div', { 'class': 'nym-toggle-info' }, [
+                            E('div', { 'class': 'nym-toggle-title' }, 'Two-Hop Mode (Fast)'),
+                            E('div', { 'class': 'nym-toggle-desc' }, 'Use WireGuard with 2 hops instead of 5-hop mixnet. Faster but less private.')
+                        ]),
+                        E('label', { 'class': 'nym-toggle' }, [
+                            E('input', {
+                                'type': 'checkbox',
+                                'id': 'two-hop-toggle',
+                                'checked': (tunnel_config.two_hop === 'on' || tunnel_config.two_hop === 'true') ? 'checked' : null
+                            }),
+                            E('span', { 'class': 'nym-toggle-slider' })
+                        ])
+                    ]),
+                    E('div', { 'class': 'nym-info-grid nym-mt-16' }, [
+                        E('div', { 'class': 'nym-info-item' }, [
+                            E('div', { 'class': 'nym-info-label' }, 'Netstack'),
+                            E('div', { 'class': 'nym-info-value' }, tunnel_config.netstack || '—')
+                        ]),
+                        E('div', { 'class': 'nym-info-item' }, [
+                            E('div', { 'class': 'nym-info-label' }, 'Transports'),
+                            E('div', { 'class': 'nym-info-value' }, tunnel_config.circumvention_transports || '—')
+                        ])
+                    ]),
+                    E('button', { 'type': 'submit', 'class': 'nym-btn nym-btn-primary nym-mt-16', 'style': 'width: 100%' },
+                        'Save Tunnel Settings')
                 ])
             ])
         ]);
 
-        // LAN Access Section
-        var lanSection = E('div', { 'class': 'cbi-section' }, [
-            E('h3', {}, _('Local Network Access')),
-            E('div', { 'class': 'cbi-section-node' }, [
-                E('div', { 'class': 'table' }, [
-                    E('div', { 'class': 'tr' }, [
-                        E('div', { 'class': 'td left', 'style': 'width:33%' }, _('Current Policy:')),
-                        E('div', { 'class': 'td left' }, lan_policy.policy || 'Unknown')
-                    ])
+        // LAN Access Card
+        var lanCard = E('div', { 'class': 'nym-card' }, [
+            E('div', { 'class': 'nym-card-header', 'click': function() { toggleCard(lanCard); } }, [
+                E('div', { 'class': 'nym-card-title' }, [
+                    E('div', { 'class': 'nym-card-icon' }, '🏠'),
+                    'Local Network'
                 ]),
-                E('div', { 'class': 'cbi-section-node', 'style': 'margin-top: 10px' }, [
+                E('div', { 'class': 'nym-card-chevron' }, '▼')
+            ]),
+            E('div', { 'class': 'nym-card-body' }, [
+                E('div', { 'class': 'nym-card-description' },
+                    'Control whether devices on your local network can be accessed while connected to the VPN.'),
+                E('div', { 'class': 'nym-info-item nym-mb-16' }, [
+                    E('div', { 'class': 'nym-info-label' }, 'Current Policy'),
+                    E('div', { 'class': 'nym-info-value', 'id': 'lan-policy-display' }, lan_policy.policy || '—')
+                ]),
+                E('div', { 'style': 'display: flex; gap: 12px' }, [
                     E('button', {
-                        'class': 'btn cbi-button btn-green',
+                        'class': 'nym-btn nym-btn-primary',
+                        'style': 'flex: 1',
                         'click': function() { handleLanPolicy('allow'); }
-                    }, _('Allow LAN Access')),
-                    ' ',
+                    }, 'Allow LAN'),
                     E('button', {
-                        'class': 'btn cbi-button btn-red',
+                        'class': 'nym-btn nym-btn-danger',
+                        'style': 'flex: 1',
                         'click': function() { handleLanPolicy('block'); }
-                    }, _('Block LAN Access'))
+                    }, 'Block LAN')
                 ])
             ])
         ]);
 
-        // Add spacing to sections
-        statusSection.style.marginBottom = '30px';
-        gatewaySection.style.marginBottom = '30px';
-        tunnelSection.style.marginBottom = '30px';
-        lanSection.style.marginBottom = '30px';
+        // Account Card
+        var accountCard = E('div', { 'class': 'nym-card' }, [
+            E('div', { 'class': 'nym-card-header', 'click': function() { toggleCard(accountCard); } }, [
+                E('div', { 'class': 'nym-card-title' }, [
+                    E('div', { 'class': 'nym-card-icon' }, '👤'),
+                    'Account'
+                ]),
+                E('div', { 'class': 'nym-card-chevron' }, '▼')
+            ]),
+            E('div', { 'class': 'nym-card-body' }, [
+                isLoggedIn ? E('div', { 'class': 'nym-account-logged-in' }, [
+                    E('div', { 'class': 'nym-account-state' }, account_info.state || 'Active'),
+                    E('div', { 'class': 'nym-account-id' }, account_info.identity),
+                    E('div', { 'class': 'nym-account-actions' }, [
+                        E('button', { 'class': 'nym-btn nym-btn-secondary nym-btn-small', 'click': handleRotateKeys }, 'Rotate Keys'),
+                        E('button', { 'class': 'nym-btn nym-btn-danger nym-btn-small', 'click': handleAccountLogout }, 'Logout')
+                    ])
+                ]) : hasError ? E('div', { 'class': 'nym-account-error' }, [
+                    E('div', { 'class': 'nym-account-state', 'style': 'color: var(--danger)' }, state || 'Error'),
+                    E('div', { 'class': 'nym-card-description', 'style': 'margin: 12px 0' },
+                        'An account exists but there was an error. Try logging out and back in.'),
+                    E('button', { 'class': 'nym-btn nym-btn-danger', 'style': 'width: 100%', 'click': handleAccountLogout }, 'Logout')
+                ]) : E('form', { 'submit': handleAccountLogin }, [
+                    E('div', { 'class': 'nym-card-description' },
+                        'Enter your recovery phrase to connect your Nym account.'),
+                    E('div', { 'class': 'nym-form-group' }, [
+                        E('label', { 'class': 'nym-form-label' }, 'Recovery Phrase'),
+                        E('input', {
+                            'type': 'password',
+                            'name': 'mnemonic',
+                            'class': 'nym-input',
+                            'placeholder': 'Enter your 24-word recovery phrase'
+                        })
+                    ]),
+                    E('div', { 'class': 'nym-form-group' }, [
+                        E('label', { 'class': 'nym-form-label' }, 'Connection Mode'),
+                        E('select', { 'name': 'mode', 'class': 'nym-select' }, [
+                            E('option', { 'value': 'api' }, 'API (Recommended)'),
+                            E('option', { 'value': 'decentralised' }, 'Decentralised')
+                        ])
+                    ]),
+                    E('button', { 'type': 'submit', 'class': 'nym-btn nym-btn-primary', 'style': 'width: 100%' }, 'Login')
+                ])
+            ])
+        ]);
 
-        // Assemble all sections
-        m.appendChild(statusSection);
-        m.appendChild(gatewaySection);
-        m.appendChild(tunnelSection);
-        m.appendChild(lanSection);
-        m.appendChild(accountSection);
+        // Footer
+        var footer = E('div', { 'class': 'nym-footer' }, [
+            E('div', { 'class': 'nym-footer-info' }, [
+                E('div', { 'class': 'nym-footer-item' }, ['Version: ', E('span', {}, info.version || '—')]),
+                E('div', { 'class': 'nym-footer-item' }, ['Network: ', E('span', {}, network.network || info.network || '—')])
+            ])
+        ]);
 
-        // Initial status update
+        // Append all cards
+        container.appendChild(gatewayCard);
+        container.appendChild(tunnelCard);
+        container.appendChild(lanCard);
+        container.appendChild(accountCard);
+        container.appendChild(footer);
+
+        // Initial status
         updateStatus();
-        updateGatewayDisplay();
 
-        // Start uptime timer if already connected on page load
+        // Start uptime if connected
         if (status.state === 'connected') {
             var storedTime = getStoredStartTime();
-            if (storedTime) {
-                // Resume with stored start time
-                startUptimeTimer(storedTime);
-            } else {
-                // No stored time, start fresh (connection was made before we added this feature)
-                startUptimeTimer();
-            }
-        } else {
-            // Not connected, clear any stale localStorage data
-            try {
-                localStorage.removeItem(UPTIME_STORAGE_KEY);
-            } catch (e) {}
+            startUptimeTimer(storedTime);
         }
 
-        // Poll for status updates every 5 seconds
+        // Poll status
         poll.add(updateStatus, 5);
 
-        return m;
+        return container;
     },
 
     handleSaveApply: null,
