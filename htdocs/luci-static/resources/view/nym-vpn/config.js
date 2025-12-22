@@ -59,6 +59,7 @@ return view.extend({
         var entryCountrySelect, exitCountrySelect;
         var entryGatewayContainer, exitGatewayContainer;
         var isTwoHopMode = tunnel_config.two_hop === 'on';
+        var previousState = status.state || 'unknown';
 
         // Uptime tracking
         var connectionStartTime = null;
@@ -147,12 +148,23 @@ return view.extend({
                         result.exit_country,
                         countries.data);
                     buildConnectionChain(isTwoHopMode ? 2 : 5);
+
+                    // Reset gateway selectors to default state only on state change to connected
+                    if (previousState !== 'connected') {
+                        if (entryCountrySelect) entryCountrySelect.value = 'none';
+                        if (exitCountrySelect) exitCountrySelect.value = 'none';
+                        if (entryGatewayContainer) dom.content(entryGatewayContainer, E('div', { 'class': 'nym-gateway-loading' }, 'Select a country'));
+                        if (exitGatewayContainer) dom.content(exitGatewayContainer, E('div', { 'class': 'nym-gateway-loading' }, 'Select a country'));
+                    }
                 } else if (state === 'disconnected' || state === 'connecting') {
                     // Only clear gateway info when fully disconnected or connecting fresh
                     if (entryGatewayDisplay) entryGatewayDisplay.innerHTML = '<div class="nym-gateway-empty">—</div>';
                     if (exitGatewayDisplay) exitGatewayDisplay.innerHTML = '<div class="nym-gateway-empty">—</div>';
                 }
                 // Keep gateway info visible during 'disconnecting' state
+
+                // Update previous state for next poll
+                previousState = state;
 
             }).catch(function(err) {
                 console.error('Status update failed:', err);
@@ -194,41 +206,69 @@ return view.extend({
             if (statusLabel) statusLabel.textContent = 'Connecting';
             if (actionBtn) actionBtn.disabled = true;
 
-            rpc.connect().then(function(result) {
-                if (!result || !result.success) {
-                    showToast('Connection failed: ' + (result.error || 'Unknown error'), 'error');
-                    updateStatus();
-                    return;
-                }
+            // Get selected gateway settings
+            var entry_country = entryCountrySelect ? entryCountrySelect.value : 'none';
+            var exit_country = exitCountrySelect ? exitCountrySelect.value : 'none';
 
-                var pollCount = 0;
-                var maxPolls = 60;
+            // Get selected gateway IDs from radio buttons
+            var entryRadio = entryGatewayContainer ? entryGatewayContainer.querySelector('input[name="entry_gateway_id"]:checked') : null;
+            var exitRadio = exitGatewayContainer ? exitGatewayContainer.querySelector('input[name="exit_gateway_id"]:checked') : null;
+            var entry_id = entryRadio ? entryRadio.value : null;
+            var exit_id = exitRadio ? exitRadio.value : null;
 
-                var pollStatus = function() {
-                    pollCount++;
-                    rpc.status().then(function(st) {
-                        if (st && st.state === 'connected') {
-                            updateStatus();
-                        } else if (st && st.state === 'connecting') {
-                            if (pollCount < maxPolls) {
-                                setTimeout(pollStatus, 1000);
+            var entry_random = false;
+            var exit_random = false;
+
+            if (entry_country === 'none') entry_country = null;
+            if (exit_country === 'none') exit_country = null;
+            if (entry_country === 'random') { entry_country = null; entry_id = null; entry_random = true; }
+            if (exit_country === 'random') { exit_country = null; exit_id = null; exit_random = true; }
+            if (entry_id) entry_country = null;
+            if (exit_id) exit_country = null;
+
+            // Save gateway settings first, then connect
+            rpc.gatewaySet(entry_country, exit_country, entry_id || null, exit_id || null, entry_random, exit_random, null)
+                .then(function(gwResult) {
+                    if (!gwResult || !gwResult.success) {
+                        console.warn('Gateway config warning:', gwResult ? gwResult.error : 'Unknown');
+                    }
+                    return rpc.connect();
+                })
+                .then(function(result) {
+                    if (!result || !result.success) {
+                        showToast('Connection failed: ' + (result.error || 'Unknown error'), 'error');
+                        updateStatus();
+                        return;
+                    }
+
+                    var pollCount = 0;
+                    var maxPolls = 60;
+
+                    var pollStatus = function() {
+                        pollCount++;
+                        rpc.status().then(function(st) {
+                            if (st && st.state === 'connected') {
+                                updateStatus();
+                            } else if (st && st.state === 'connecting') {
+                                if (pollCount < maxPolls) {
+                                    setTimeout(pollStatus, 1000);
+                                } else {
+                                    updateStatus();
+                                }
                             } else {
                                 updateStatus();
                             }
-                        } else {
-                            updateStatus();
-                        }
-                    }).catch(function() {
-                        if (pollCount < maxPolls) setTimeout(pollStatus, 1000);
-                        else updateStatus();
-                    });
-                };
+                        }).catch(function() {
+                            if (pollCount < maxPolls) setTimeout(pollStatus, 1000);
+                            else updateStatus();
+                        });
+                    };
 
-                setTimeout(pollStatus, 1000);
-            }).catch(function(err) {
-                showToast('Connection error: ' + err.message, 'error');
-                updateStatus();
-            });
+                    setTimeout(pollStatus, 1000);
+                }).catch(function(err) {
+                    showToast('Connection error: ' + err.message, 'error');
+                    updateStatus();
+                });
         };
 
         var handleDisconnect = function() {
@@ -592,19 +632,53 @@ return view.extend({
                 return header;
             })(),
 
-            // Status Hero
+            // Status Hero with integrated gateway selection
             statusHero = E('div', { 'class': 'nym-status-hero disconnected' }, [
-                E('div', { 'class': 'nym-status-ring' }, [
-                    E('div', { 'class': 'nym-status-ring-pulse' }),
-                    E('div', { 'class': 'nym-status-ring-outer' }),
-                    E('div', { 'class': 'nym-status-ring-inner' }, [
-                        statusLabel = E('div', { 'class': 'nym-status-label' }, 'Disconnected')
+                // Three-column layout: Entry selector | Status ring | Exit selector
+                E('div', { 'class': 'nym-hero-gateway-row' }, [
+                    // LEFT: Entry Gateway Selection
+                    E('div', { 'class': 'nym-hero-gateway-panel' }, [
+                        E('div', { 'class': 'nym-gateway-box-title' }, 'Entry Gateway'),
+                        E('div', { 'class': 'nym-form-group', 'style': 'margin-bottom: 0' }, [
+                            E('label', { 'class': 'nym-form-label' }, 'Country'),
+                            entryCountrySelect = createCountrySelect(entry_countries, 'entry_country', function(ev) {
+                                loadGatewaysForCountry(ev.target.value, 'mixnet-entry', entryGatewayContainer);
+                            })
+                        ]),
+                        entryGatewayContainer = E('div', { 'class': 'nym-form-group', 'style': 'margin-bottom: 0' },
+                            E('div', { 'class': 'nym-gateway-loading' }, 'Select a country'))
+                    ]),
+
+                    // CENTER: Status Ring + Uptime
+                    E('div', { 'class': 'nym-hero-center' }, [
+                        E('div', { 'class': 'nym-status-ring' }, [
+                            E('div', { 'class': 'nym-status-ring-pulse' }),
+                            E('div', { 'class': 'nym-status-ring-outer' }),
+                            E('div', { 'class': 'nym-status-ring-inner' }, [
+                                statusLabel = E('div', { 'class': 'nym-status-label' }, 'Disconnected')
+                            ])
+                        ]),
+                        E('div', { 'class': 'nym-uptime' }, [
+                            uptimeDisplay = E('span', {}, '--:--')
+                        ]),
+                        E('div', { 'class': 'nym-uptime-label' }, 'Session Duration')
+                    ]),
+
+                    // RIGHT: Exit Gateway Selection
+                    E('div', { 'class': 'nym-hero-gateway-panel' }, [
+                        E('div', { 'class': 'nym-gateway-box-title' }, 'Exit Gateway'),
+                        E('div', { 'class': 'nym-form-group', 'style': 'margin-bottom: 0' }, [
+                            E('label', { 'class': 'nym-form-label' }, 'Country'),
+                            exitCountrySelect = createCountrySelect(exit_countries, 'exit_country', function(ev) {
+                                loadGatewaysForCountry(ev.target.value, 'mixnet-exit', exitGatewayContainer);
+                            })
+                        ]),
+                        exitGatewayContainer = E('div', { 'class': 'nym-form-group', 'style': 'margin-bottom: 0' },
+                            E('div', { 'class': 'nym-gateway-loading' }, 'Select a country'))
                     ])
                 ]),
-                E('div', { 'class': 'nym-uptime' }, [
-                    uptimeDisplay = E('span', {}, '--:--')
-                ]),
-                E('div', { 'class': 'nym-uptime-label' }, 'Session Duration'),
+
+                // Gateway info display (shown when connected)
                 E('div', { 'class': 'nym-gateway-display' }, [
                     E('div', { 'class': 'nym-gateway-item' }, [
                         E('div', { 'class': 'nym-gateway-label' }, 'Entry'),
@@ -623,62 +697,15 @@ return view.extend({
                         ])
                     ])
                 ]),
+
+                // Action button - no initial click handler to avoid dual handlers
                 E('div', { 'class': 'nym-action-buttons' }, [
                     actionBtn = E('button', {
-                        'class': 'nym-btn nym-btn-primary',
-                        'click': handleConnect
+                        'class': 'nym-btn nym-btn-primary'
                     }, 'Connect')
                 ])
             ])
         ]);
-
-        // Gateway Selection Card
-        entryGatewayContainer = E('div', { 'class': 'nym-form-group' },
-            E('div', { 'class': 'nym-gateway-loading' }, 'Select a country above'));
-        exitGatewayContainer = E('div', { 'class': 'nym-form-group' },
-            E('div', { 'class': 'nym-gateway-loading' }, 'Select a country above'));
-
-        var gatewayCard = E('div', { 'class': 'nym-card' }, [
-            E('div', { 'class': 'nym-card-header', 'click': function() { toggleCard(gatewayCard); } }, [
-                E('div', { 'class': 'nym-card-title' }, [
-                    E('div', { 'class': 'nym-card-icon' }, '⬡'),
-                    'Gateway Selection'
-                ]),
-                E('div', { 'class': 'nym-card-chevron' }, '▼')
-            ]),
-            E('div', { 'class': 'nym-card-body' }, [
-                E('div', { 'class': 'nym-card-description' },
-                    'Choose your entry and exit points in the Nym mixnet. Entry is where your traffic enters, exit is where it emerges.'),
-                E('form', { 'submit': handleGatewayUpdate }, [
-                    E('div', { 'class': 'nym-gateway-section' }, [
-                        E('div', { 'class': 'nym-gateway-box' }, [
-                            E('div', { 'class': 'nym-gateway-box-title' }, 'Entry Point'),
-                            E('div', { 'class': 'nym-form-group' }, [
-                                E('label', { 'class': 'nym-form-label' }, 'Country'),
-                                entryCountrySelect = createCountrySelect(entry_countries, 'entry_country', function(ev) {
-                                    loadGatewaysForCountry(ev.target.value, 'mixnet-entry', entryGatewayContainer);
-                                })
-                            ]),
-                            entryGatewayContainer
-                        ]),
-                        E('div', { 'class': 'nym-gateway-box' }, [
-                            E('div', { 'class': 'nym-gateway-box-title' }, 'Exit Point'),
-                            E('div', { 'class': 'nym-form-group' }, [
-                                E('label', { 'class': 'nym-form-label' }, 'Country'),
-                                exitCountrySelect = createCountrySelect(exit_countries, 'exit_country', function(ev) {
-                                    loadGatewaysForCountry(ev.target.value, 'mixnet-exit', exitGatewayContainer);
-                                })
-                            ]),
-                            exitGatewayContainer
-                        ])
-                    ]),
-                    E('div', { 'class': 'nym-text-center' }, [
-                        E('button', { 'class': 'nym-btn nym-btn-primary', 'type': 'submit' }, 'Save Gateway Settings')
-                    ])
-                ])
-            ])
-        ]);
-        container.appendChild(gatewayCard);
 
         // Tunnel Settings Card
         var tunnelCard = E('div', { 'class': 'nym-card' }, [
@@ -811,7 +838,7 @@ return view.extend({
         ]);
         container.appendChild(footer);
 
-        // Set initial status
+        // Set initial status and button handler
         if (status.state) {
             statusHero.className = 'nym-status-hero ' + status.state;
             statusLabel.textContent = status.state.charAt(0).toUpperCase() + status.state.slice(1);
@@ -832,7 +859,15 @@ return view.extend({
                 actionBtn.textContent = 'Disconnect';
                 actionBtn.className = 'nym-btn nym-btn-danger';
                 actionBtn.onclick = handleDisconnect;
+            } else {
+                // Disconnected or other state - set Connect handler
+                actionBtn.textContent = 'Connect';
+                actionBtn.className = 'nym-btn nym-btn-primary';
+                actionBtn.onclick = handleConnect;
             }
+        } else {
+            // No status yet - default to Connect
+            actionBtn.onclick = handleConnect;
         }
 
         // Start uptime if connected

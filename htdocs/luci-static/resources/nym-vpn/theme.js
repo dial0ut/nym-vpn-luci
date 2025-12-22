@@ -191,5 +191,19 @@ return baseclass.extend({
     .nym-container button.nym-btn, .nym-container button.nym-btn:hover, .nym-container button.nym-btn:focus, .nym-container button.nym-btn:active { background-image: none !important; box-shadow: none !important; outline: none !important; text-shadow: none !important; }\
     .nym-container button.nym-btn-danger, .nym-container button.nym-btn-danger:hover, .nym-container button.nym-btn-danger:focus, .nym-container button.nym-btn-danger:active { background: transparent !important; background-color: transparent !important; background-image: none !important; color: var(--danger) !important; border-color: var(--danger) !important; }\
     .nym-container button.nym-btn-danger:hover { background: var(--danger-dim) !important; background-color: var(--danger-dim) !important; }\
+    .nym-hero-gateway-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; }\
+    .nym-hero-gateway-panel { flex: 1 1 0; max-width: 280px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; transition: border-color 0.3s ease; text-align: left; }\
+    .nym-hero-gateway-panel:hover { border-color: var(--border-accent); }\
+    .nym-hero-gateway-panel .nym-gateway-box-title { margin-bottom: 14px; font-size: 11px; }\
+    .nym-hero-gateway-panel .nym-select { font-size: 13px; padding: 0 16px; height: 44px; line-height: 44px; background-position: right 14px center; text-align: center; text-align-last: center; }\
+    .nym-hero-gateway-panel .nym-gateway-list { max-height: 160px; margin-top: 14px; }\
+    .nym-hero-gateway-panel .nym-gateway-option { padding: 10px 12px; font-size: 12px; }\
+    .nym-hero-gateway-panel .nym-gateway-option-name { font-size: 12px; }\
+    .nym-hero-gateway-panel .nym-gateway-loading { font-size: 12px; padding: 10px 0; text-align: center; }\
+    .nym-hero-gateway-panel .nym-form-label { font-size: 10px; text-align: center; margin-top: 8px; margin-bottom: 10px; }\
+    .nym-hero-center { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 16px; }\
+    .nym-hero-center .nym-status-ring { margin-bottom: 24px; }\
+    .nym-hero-center .nym-uptime { margin-top: 8px; }\
+    @media (max-width: 700px) { .nym-hero-gateway-row { flex-direction: column; align-items: center; } .nym-hero-gateway-panel { flex: 0 0 auto; max-width: 320px; width: 100%; } .nym-hero-center { order: -1; margin-bottom: 24px; } }\
 '
 });
