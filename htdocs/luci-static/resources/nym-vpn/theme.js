@@ -49,8 +49,8 @@ return baseclass.extend({
     .nym-status-hero.connecting .nym-status-label, .nym-status-hero.disconnecting .nym-status-label { color: var(--warning); }\
     .nym-uptime { font-size: 28px; font-weight: 300; color: var(--text-primary); margin-bottom: 8px; font-variant-numeric: tabular-nums; }\
     .nym-uptime-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }\
-    .nym-gateway-display { display: flex; justify-content: center; align-items: flex-start; gap: 24px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color); }\
-    .nym-gateway-item { display: flex; flex-direction: column; align-items: center; min-width: 140px; max-width: 160px; }\
+    .nym-gateway-display { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color); }\
+    .nym-gateway-item { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 280px; }\
     .nym-gateway-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; text-indent: 2px; color: var(--text-muted); margin-bottom: 8px; text-align: center; }\
     .nym-connection-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 20px; opacity: 0; transform: scale(0.95); transition: opacity 0.5s ease, transform 0.5s ease; pointer-events: none; }\
     .nym-status-hero.connected .nym-connection-wrapper, .nym-status-hero.disconnecting .nym-connection-wrapper { opacity: 1; transform: scale(1); pointer-events: auto; }\
@@ -63,7 +63,8 @@ return baseclass.extend({
     @keyframes chain-flow { 0% { background-position: 100% 0; } 100% { background-position: 0% 0; } }\
     .nym-gateway-value { display: flex; flex-direction: column; align-items: center; gap: 4px; }\
     .nym-gateway-flag { font-size: 28px; line-height: 1; min-width: 36px; text-align: center; }\
-    .nym-gateway-name { font-size: 12px; color: var(--text-primary); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\
+    .nym-gateway-name { font-size: 12px; color: var(--text-primary); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\
+    .nym-gateway-id { font-size: 9px; color: var(--text-secondary); font-family: monospace; max-width: 260px; }\
     .nym-gateway-ip { font-size: 10px; color: var(--text-muted); font-family: monospace; }\
     .nym-gateway-empty { font-size: 24px; color: var(--text-muted); }\
     .nym-action-buttons { display: flex; justify-content: center; gap: 16px; margin-top: 32px; }\
@@ -107,7 +108,7 @@ return baseclass.extend({
     .nym-modal-title { color: var(--text-primary); font-size: 18px; font-weight: 600; margin-bottom: 8px; }\
     .nym-modal-message { color: var(--text-muted); font-size: 13px; line-height: 1.5; }\
     .nym-modal-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }\
-    .nym-modal-buttons .nym-btn { padding: 10px 24px; font-size: 12px; min-width: 100px; }\
+    .nym-modal-buttons .nym-btn { padding: 10px 24px; font-size: 12px; min-width: 100px; white-space: nowrap; }\
     .nym-modal-buttons .nym-btn-danger { background: transparent !important; background-color: transparent !important; background-image: none !important; color: var(--danger) !important; border: 1px solid var(--danger) !important; }\
     .nym-modal-buttons .nym-btn-danger:hover { background: var(--danger-dim) !important; background-color: var(--danger-dim) !important; box-shadow: 0 0 24px var(--danger-dim) !important; }\
     .nym-modal-buttons .nym-btn-primary { background: var(--nym-green) !important; background-color: var(--nym-green) !important; background-image: none !important; color: var(--bg-primary) !important; }\
@@ -205,5 +206,13 @@ return baseclass.extend({
     .nym-hero-center .nym-status-ring { margin-bottom: 24px; }\
     .nym-hero-center .nym-uptime { margin-top: 8px; }\
     @media (max-width: 700px) { .nym-hero-gateway-row { flex-direction: column; align-items: center; } .nym-hero-gateway-panel { flex: 0 0 auto; max-width: 320px; width: 100%; } .nym-hero-center { order: -1; margin-bottom: 24px; } }\
+    /* Service Management */\
+    .nym-service-status-row { display: flex; gap: 24px; justify-content: center; margin-bottom: 16px; }\
+    .nym-service-info { text-align: center; }\
+    .nym-service-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px; }\
+    .nym-service-value { font-size: 18px; color: var(--text-primary); font-variant-numeric: tabular-nums; }\
+    .nym-daemon-status { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }\
+    .nym-daemon-status.running { background: var(--nym-green-dim); color: var(--nym-green); }\
+    .nym-daemon-status.stopped { background: var(--danger-dim); color: var(--danger); }\
 '
 });

@@ -20,10 +20,11 @@ return view.extend({
             rpc.tunnelGet(),
             rpc.accountGet(),
             rpc.networkGet(),
-            rpc.lanGet()
+            rpc.lanGet(),
+            rpc.daemonStatus()
         ]).catch(function(err) {
             console.error('Failed to load Nym VPN data:', err);
-            return [null, null, null, [], [], null, null, null, null];
+            return [null, null, null, [], [], null, null, null, null, null];
         });
     },
 
@@ -37,6 +38,7 @@ return view.extend({
         var account_info = data[6] || {};
         var network = data[7] || {};
         var lan_policy = data[8] || {};
+        var daemon_status = data[9] || {};
 
         var self = this;
         var E = dom.create.bind(dom);
@@ -60,6 +62,7 @@ return view.extend({
         var entryGatewayContainer, exitGatewayContainer;
         var isTwoHopMode = tunnel_config.two_hop === 'on';
         var previousState = status.state || 'unknown';
+        var daemonStatusDisplay;
 
         // Uptime tracking
         var connectionStartTime = null;
@@ -138,12 +141,14 @@ return view.extend({
 
                 if (state === 'connected') {
                     nymUI.renderGatewayInfo(entryGatewayDisplay,
-                        result.entry_name || result.entry_id,
+                        result.entry_name,
+                        result.entry_id,
                         result.entry_ip,
                         result.entry_country,
                         countries.data);
                     nymUI.renderGatewayInfo(exitGatewayDisplay,
-                        result.exit_name || result.exit_id,
+                        result.exit_name,
+                        result.exit_id,
                         result.exit_ip,
                         result.exit_country,
                         countries.data);
@@ -823,6 +828,112 @@ return view.extend({
         ]);
         container.appendChild(accountCard);
 
+        // Daemon restart handler
+        var handleDaemonRestart = function() {
+            var doRestart = function() {
+                showModal('Restarting Daemon', 'Please wait...');
+
+                rpc.daemonRestart().then(function(result) {
+                    if (result && result.success) {
+                        setModalSuccess('Done', 'Daemon restarted', '✓');
+                        // Update daemon status display
+                        if (daemonStatusDisplay) {
+                            daemonStatusDisplay.textContent = 'Running';
+                            daemonStatusDisplay.className = 'nym-daemon-status running';
+                        }
+                        setTimeout(function() {
+                            fadeOutModal();
+                        }, 1500);
+                    } else {
+                        hideModal();
+                        showToast('Restart failed: ' + (result.error || 'Unknown'), 'error');
+                        if (daemonStatusDisplay) {
+                            daemonStatusDisplay.textContent = 'Stopped';
+                            daemonStatusDisplay.className = 'nym-daemon-status stopped';
+                        }
+                    }
+                }).catch(function(err) {
+                    hideModal();
+                    showToast('Error: ' + err.message, 'error');
+                });
+            };
+
+            // Check if VPN is connected - warn user
+            rpc.status().then(function(st) {
+                if (st && (st.state === 'connected' || st.state === 'connecting')) {
+                    confirmModal(
+                        'Restart Daemon',
+                        'The VPN is currently connected. Restarting the daemon will disconnect you.',
+                        '⚠',
+                        function() {
+                            // User confirmed - disconnect first, then restart
+                            showModal('Disconnecting', 'Please wait...');
+                            rpc.disconnect().then(function() {
+                                updateModal('Restarting daemon...');
+                                setTimeout(doRestart, 1000);
+                            }).catch(function() {
+                                doRestart(); // Try restart anyway
+                            });
+                        },
+                        null,
+                        'Restart'
+                    );
+                } else {
+                    // Not connected - just show spinner modal and restart
+                    doRestart();
+                }
+            }).catch(function() {
+                doRestart();
+            });
+        };
+
+        // Update daemon status display
+        var updateDaemonStatus = function() {
+            return rpc.daemonStatus().then(function(result) {
+                if (!result || !daemonStatusDisplay) return;
+
+                if (result.running) {
+                    daemonStatusDisplay.textContent = 'Running';
+                    daemonStatusDisplay.className = 'nym-daemon-status running';
+                } else {
+                    daemonStatusDisplay.textContent = 'Stopped';
+                    daemonStatusDisplay.className = 'nym-daemon-status stopped';
+                }
+            }).catch(function(err) {
+                console.error('Daemon status update failed:', err);
+            });
+        };
+
+        // Service Management Card
+        var serviceCard = E('div', { 'class': 'nym-card' }, [
+            E('div', { 'class': 'nym-card-header', 'click': function() { toggleCard(serviceCard); } }, [
+                E('div', { 'class': 'nym-card-title' }, [
+                    E('div', { 'class': 'nym-card-icon' }, '🔧'),
+                    'Service Management'
+                ]),
+                E('div', { 'class': 'nym-card-chevron' }, '▼')
+            ]),
+            E('div', { 'class': 'nym-card-body' }, [
+                E('div', { 'class': 'nym-card-description' },
+                    'Manage the Nym VPN daemon service running on this router.'),
+                E('div', { 'class': 'nym-service-status-row' }, [
+                    E('div', { 'class': 'nym-service-info' }, [
+                        E('div', { 'class': 'nym-service-label' }, 'Daemon Status'),
+                        daemonStatusDisplay = E('div', {
+                            'class': 'nym-daemon-status ' + (daemon_status.running ? 'running' : 'stopped')
+                        }, daemon_status.running ? 'Running' : 'Stopped')
+                    ])
+                ]),
+                E('div', { 'class': 'nym-text-center nym-mt-16' }, [
+                    E('button', {
+                        'class': 'nym-btn nym-btn-danger',
+                        'click': handleDaemonRestart
+                    }, 'Restart Daemon')
+                ])
+            ])
+        ]);
+        container.appendChild(serviceCard);
+
         // Footer
         var footer = E('div', { 'class': 'nym-footer' }, [
             E('div', { 'class': 'nym-footer-info' }, [
@@ -845,12 +956,14 @@ return view.extend({
 
             if (status.state === 'connected') {
                 nymUI.renderGatewayInfo(entryGatewayDisplay,
-                    status.entry_name || status.entry_id,
+                    status.entry_name,
+                    status.entry_id,
                     status.entry_ip,
                     status.entry_country,
                     countries.data);
                 nymUI.renderGatewayInfo(exitGatewayDisplay,
-                    status.exit_name || status.exit_id,
+                    status.exit_name,
+                    status.exit_id,
                     status.exit_ip,
                     status.exit_country,
                     countries.data);
@@ -878,6 +991,7 @@ return view.extend({
 
         // Start polling
         poll.add(updateStatus, 5);
+        poll.add(updateDaemonStatus, 10);
 
         return container;
     }

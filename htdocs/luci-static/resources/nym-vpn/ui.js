@@ -45,15 +45,16 @@ return baseclass.extend({
         return assets.qualityLow;
     },
 
-    renderGatewayInfo: function(container, name, ip, country, countryData) {
+    renderGatewayInfo: function(container, name, id, ip, country, countryData) {
         if (!container) return;
-        if (!name && !ip) {
+        if (!name && !ip && !id) {
             container.innerHTML = '<div class="nym-gateway-empty">—</div>';
             return;
         }
         var flag = country ? (countryData[country] || {}).flag || '🌐' : '🌐';
         var html = '<div class="nym-gateway-flag">' + flag + '</div>';
         if (name) html += '<div class="nym-gateway-name" title="' + (name || '') + '">' + name + '</div>';
+        if (id) html += '<div class="nym-gateway-id">' + id + '</div>';
         if (ip) html += '<div class="nym-gateway-ip">' + ip + '</div>';
         container.innerHTML = html;
     },
@@ -135,7 +136,7 @@ return baseclass.extend({
             }
         };
 
-        var confirm = function(title, message, icon, onConfirm, onCancel) {
+        var confirm = function(title, message, icon, onConfirm, onCancel, confirmText) {
             hide();
             activeModal = E('div', { 'class': 'nym-modal-overlay' }, [
                 E('div', { 'class': 'nym-modal' }, [
@@ -155,7 +156,7 @@ return baseclass.extend({
                         E('button', {
                             'class': 'nym-btn nym-btn-danger',
                             'click': function() { if (onConfirm) onConfirm(); }
-                        }, 'Logout')
+                        }, confirmText || 'Confirm')
                     ])
                 ])
             ]);

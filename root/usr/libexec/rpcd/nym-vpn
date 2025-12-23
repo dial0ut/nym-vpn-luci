@@ -685,6 +685,43 @@ handle_lan_set() {
     json_dump
 }
 
+handle_daemon_status() {
+    json_init
+
+    local status=$(/etc/init.d/nym-vpnd status 2>&1)
+
+    if [ "$status" = "running" ]; then
+        json_add_string "status" "running"
+        json_add_boolean "running" 1
+    else
+        json_add_string "status" "stopped"
+        json_add_boolean "running" 0
+    fi
+
+    json_dump
+}
+
+handle_daemon_restart() {
+    json_init
+
+    /etc/init.d/nym-vpnd restart >/dev/null 2>&1
+    sleep 2
+
+    local status=$(/etc/init.d/nym-vpnd status 2>&1)
+
+    if [ "$status" = "running" ]; then
+        json_add_boolean "success" 1
+        json_add_string "message" "Daemon restarted successfully"
+        json_add_string "status" "running"
+    else
+        json_add_boolean "success" 0
+        json_add_string "error" "Daemon failed to start"
+        json_add_string "status" "stopped"
+    fi
+
+    json_dump
+}
+
 #-------------------------------------------------------------------------------
 # Main entry point
 #-------------------------------------------------------------------------------
@@ -719,7 +756,9 @@ case "$1" in
     "network_get": {},
     "network_set": { "network": "str" },
     "lan_get": {},
-    "lan_set": { "policy": "str" }
+    "lan_set": { "policy": "str" },
+    "daemon_status": {},
+    "daemon_restart": {}
 }
 EOF
         ;;
@@ -744,6 +783,8 @@ EOF
             network_set)             handle_network_set ;;
             lan_get)                 handle_lan_get ;;
             lan_set)                 handle_lan_set ;;
+            daemon_status)           handle_daemon_status ;;
+            daemon_restart)          handle_daemon_restart ;;
             *)
                 json_init
                 json_add_boolean "success" 0

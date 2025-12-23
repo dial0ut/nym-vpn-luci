@@ -103,5 +103,17 @@ return baseclass.extend({
         object: 'nym-vpn',
         method: 'lan_set',
         params: ['policy']
+    }),
+
+    daemonStatus: rpc.declare({
+        object: 'nym-vpn',
+        method: 'daemon_status',
+        params: []
+    }),
+
+    daemonRestart: rpc.declare({
+        object: 'nym-vpn',
+        method: 'daemon_restart',
+        params: []
     })
 });

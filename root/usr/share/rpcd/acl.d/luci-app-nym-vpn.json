@@ -13,7 +13,8 @@
           "tunnel_get",
           "account_get",
           "network_get",
-          "lan_get"
+          "lan_get",
+          "daemon_status"
         ],
         "service": [
           "list"
@@ -32,8 +33,10 @@
           "tunnel_set",
           "account_set",
           "account_forget",
+          "account_rotate_keys",
           "network_set",
-          "lan_set"
+          "lan_set",
+          "daemon_restart"
         ],
         "service": [
           "start",
