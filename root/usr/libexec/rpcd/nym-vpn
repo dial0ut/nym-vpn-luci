@@ -63,11 +63,12 @@ validate_input() {
                 on|off) echo "$input" ;;
             esac
             ;;
-        policy)
-            # Only allow/block
-            case "$input" in
-                allow|block) echo "$input" ;;
-            esac
+        ip)
+            # IPv4 or IPv6 address
+            # IPv4: 1-3 digits separated by dots
+            # IPv6: hex digits and colons
+            echo "$input" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$' && { echo "$input"; return; }
+            echo "$input" | grep -qE '^[0-9a-fA-F:]+$' && echo "$input"
             ;;
         network)
             # Network names: alphanumeric and dash
@@ -641,47 +642,97 @@ handle_network_set() {
     json_dump
 }
 
-handle_lan_get() {
-    local policy=$($VPNC lan get 2>&1)
+handle_dns_get() {
+    local output=$($VPNC dns get 2>&1)
+
+    # Parse: "Custom DNS: Enabled [8.8.8.8 1.1.1.1]" or "Custom DNS: Disabled []"
+    local enabled="0"
+    case "$output" in
+        *Enabled*) enabled="1" ;;
+    esac
+
+    # Extract IPs from brackets
+    local servers=$(echo "$output" | sed -n 's/.*\[\(.*\)\].*/\1/p')
 
     json_init
-    json_add_string "policy" "$policy"
+    json_add_boolean "enabled" "$enabled"
+    json_add_string "servers" "$servers"
     json_dump
 }
 
-handle_lan_set() {
+handle_dns_set() {
     read input
     json_load "$input"
-    json_get_var policy policy
+    json_get_var servers servers
 
-    if [ -z "$policy" ]; then
-        json_init
-        json_add_boolean "success" 0
-        json_add_string "error" "Policy required (allow or block)"
-        json_dump
-        return
+    # Validate each IP if provided
+    local validated_servers=""
+    if [ -n "$servers" ]; then
+        for ip in $servers; do
+            local valid_ip=$(validate_input "$ip" ip)
+            if [ -z "$valid_ip" ]; then
+                json_init
+                json_add_boolean "success" 0
+                json_add_string "error" "Invalid IP address: $ip"
+                json_dump
+                return
+            fi
+            validated_servers="$validated_servers $valid_ip"
+        done
     fi
 
-    policy=$(validate_input "$policy" policy)
-    if [ -z "$policy" ]; then
-        json_init
-        json_add_boolean "success" 0
-        json_add_string "error" "Invalid policy (must be allow or block)"
-        json_dump
-        return
-    fi
-
-    result=$($VPNC lan set "$policy" 2>&1)
-    ret=$?
+    local result=$($VPNC dns set $validated_servers 2>&1)
+    local ret=$?
 
     json_init
     if [ $ret -eq 0 ]; then
         json_add_boolean "success" 1
-        json_add_string "message" "LAN policy set to $policy"
+        json_add_string "message" "DNS servers updated"
     else
         json_add_boolean "success" 0
         json_add_string "error" "$result"
     fi
+    json_dump
+}
+
+handle_dns_enable() {
+    local result=$($VPNC dns enable 2>&1)
+    local ret=$?
+
+    json_init
+    if [ $ret -eq 0 ]; then
+        json_add_boolean "success" 1
+        json_add_string "message" "Custom DNS enabled"
+    else
+        json_add_boolean "success" 0
+        json_add_string "error" "$result"
+    fi
+    json_dump
+}
+
+handle_dns_disable() {
+    local result=$($VPNC dns disable 2>&1)
+    local ret=$?
+
+    json_init
+    if [ $ret -eq 0 ]; then
+        json_add_boolean "success" 1
+        json_add_string "message" "Custom DNS disabled"
+    else
+        json_add_boolean "success" 0
+        json_add_string "error" "$result"
+    fi
+    json_dump
+}
+
+handle_dns_get_default() {
+    local output=$($VPNC dns get-default 2>&1)
+
+    # Parse: "Default DNS: 9.9.9.9 149.112.112.112 ..."
+    local servers=$(echo "$output" | sed 's/Default DNS: //')
+
+    json_init
+    json_add_string "servers" "$servers"
     json_dump
 }
 
@@ -755,8 +806,11 @@ case "$1" in
     "account_rotate_keys": {},
     "network_get": {},
     "network_set": { "network": "str" },
-    "lan_get": {},
-    "lan_set": { "policy": "str" },
+    "dns_get": {},
+    "dns_set": { "servers": "str" },
+    "dns_enable": {},
+    "dns_disable": {},
+    "dns_get_default": {},
     "daemon_status": {},
     "daemon_restart": {}
 }
@@ -781,8 +835,11 @@ EOF
             account_rotate_keys)     handle_account_rotate_keys ;;
             network_get)             handle_network_get ;;
             network_set)             handle_network_set ;;
-            lan_get)                 handle_lan_get ;;
-            lan_set)                 handle_lan_set ;;
+            dns_get)                 handle_dns_get ;;
+            dns_set)                 handle_dns_set ;;
+            dns_enable)              handle_dns_enable ;;
+            dns_disable)             handle_dns_disable ;;
+            dns_get_default)         handle_dns_get_default ;;
             daemon_status)           handle_daemon_status ;;
             daemon_restart)          handle_daemon_restart ;;
             *)

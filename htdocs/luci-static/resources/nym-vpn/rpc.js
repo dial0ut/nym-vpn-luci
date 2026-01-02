@@ -93,16 +93,34 @@ return baseclass.extend({
         params: []
     }),
 
-    lanGet: rpc.declare({
+    dnsGet: rpc.declare({
         object: 'nym-vpn',
-        method: 'lan_get',
+        method: 'dns_get',
         params: []
     }),
 
-    lanSet: rpc.declare({
+    dnsSet: rpc.declare({
         object: 'nym-vpn',
-        method: 'lan_set',
-        params: ['policy']
+        method: 'dns_set',
+        params: ['servers']
+    }),
+
+    dnsEnable: rpc.declare({
+        object: 'nym-vpn',
+        method: 'dns_enable',
+        params: []
+    }),
+
+    dnsDisable: rpc.declare({
+        object: 'nym-vpn',
+        method: 'dns_disable',
+        params: []
+    }),
+
+    dnsGetDefault: rpc.declare({
+        object: 'nym-vpn',
+        method: 'dns_get_default',
+        params: []
     }),
 
     daemonStatus: rpc.declare({

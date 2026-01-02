@@ -20,7 +20,7 @@ return view.extend({
             rpc.tunnelGet(),
             rpc.accountGet(),
             rpc.networkGet(),
-            rpc.lanGet(),
+            rpc.dnsGet(),
             rpc.daemonStatus()
         ]).catch(function(err) {
             console.error('Failed to load Nym VPN data:', err);
@@ -37,7 +37,7 @@ return view.extend({
         var tunnel_config = data[5] || {};
         var account_info = data[6] || {};
         var network = data[7] || {};
-        var lan_policy = data[8] || {};
+        var dns_config = data[8] || {};
         var daemon_status = data[9] || {};
 
         var self = this;
@@ -63,6 +63,7 @@ return view.extend({
         var isTwoHopMode = tunnel_config.two_hop === 'on';
         var previousState = status.state || 'unknown';
         var daemonStatusDisplay;
+        var mobileGatewayTabs;
 
         // Uptime tracking
         var connectionStartTime = null;
@@ -75,9 +76,12 @@ return view.extend({
             nymUI.saveStartTime(connectionStartTime);
 
             var updateDisplay = function() {
-                if (uptimeDisplay && connectionStartTime) {
+                if (connectionStartTime) {
                     var elapsed = Math.floor((Date.now() - connectionStartTime) / 1000);
-                    uptimeDisplay.textContent = nymUI.formatUptime(elapsed);
+                    var formatted = nymUI.formatUptime(elapsed);
+                    if (uptimeDisplay) uptimeDisplay.textContent = formatted;
+                    // Also update mobile uptime
+                    if (mobileGatewayTabs) mobileGatewayTabs.updateUptime(formatted);
                 }
             };
 
@@ -115,8 +119,16 @@ return view.extend({
                     } else if (state === 'connecting') {
                         statusLabel.textContent = 'Connecting';
                         stopUptimeTimer();
+                        // Show connecting animation on mobile
+                        if (mobileGatewayTabs && previousState !== 'connecting') {
+                            mobileGatewayTabs.setConnecting();
+                        }
                     } else if (state === 'disconnecting') {
                         statusLabel.textContent = 'Disconnecting';
+                        // Show disconnecting animation on mobile
+                        if (mobileGatewayTabs && previousState !== 'disconnecting') {
+                            mobileGatewayTabs.setDisconnecting();
+                        }
                     } else {
                         statusLabel.textContent = 'Disconnected';
                         stopUptimeTimer();
@@ -154,6 +166,15 @@ return view.extend({
                         countries.data);
                     buildConnectionChain(isTwoHopMode ? 2 : 5);
 
+                    // Update mobile gateway tabs
+                    if (mobileGatewayTabs) {
+                        mobileGatewayTabs.setConnected(
+                            { name: result.entry_name, id: result.entry_id, ip: result.entry_ip, country: result.entry_country },
+                            { name: result.exit_name, id: result.exit_id, ip: result.exit_ip, country: result.exit_country },
+                            isTwoHopMode ? 2 : 5
+                        );
+                    }
+
                     // Reset gateway selectors to default state only on state change to connected
                     if (previousState !== 'connected') {
                         if (entryCountrySelect) entryCountrySelect.value = 'none';
@@ -161,12 +182,20 @@ return view.extend({
                         if (entryGatewayContainer) dom.content(entryGatewayContainer, E('div', { 'class': 'nym-gateway-loading' }, 'Select a country'));
                         if (exitGatewayContainer) dom.content(exitGatewayContainer, E('div', { 'class': 'nym-gateway-loading' }, 'Select a country'));
                     }
-                } else if (state === 'disconnected' || state === 'connecting') {
-                    // Only clear gateway info when fully disconnected or connecting fresh
+                } else if (state === 'disconnected') {
+                    // Clear gateway info when fully disconnected
+                    if (entryGatewayDisplay) entryGatewayDisplay.innerHTML = '<div class="nym-gateway-empty">—</div>';
+                    if (exitGatewayDisplay) exitGatewayDisplay.innerHTML = '<div class="nym-gateway-empty">—</div>';
+                    // Update mobile tabs to disconnected state
+                    if (mobileGatewayTabs) {
+                        mobileGatewayTabs.setDisconnected();
+                    }
+                } else if (state === 'connecting') {
+                    // Clear desktop gateway info but don't touch mobile (it shows connecting animation)
                     if (entryGatewayDisplay) entryGatewayDisplay.innerHTML = '<div class="nym-gateway-empty">—</div>';
                     if (exitGatewayDisplay) exitGatewayDisplay.innerHTML = '<div class="nym-gateway-empty">—</div>';
                 }
-                // Keep gateway info visible during 'disconnecting' state
+                // Keep gateway info visible during 'disconnecting' state (both desktop and mobile)
 
                 // Update previous state for next poll
                 previousState = state;
@@ -205,21 +234,130 @@ return view.extend({
             connectionChain.appendChild(E('div', { 'class': 'nym-chain-node' }));
         };
 
+        // Load gateways for mobile tabs
+        var loadMobileGateways = function(type, country, container, browseContainer, isBrowseOnly) {
+            if (!country || country === 'none') {
+                dom.content(container, E('div', { 'class': 'nym-mobile-gateway-placeholder' }, 'Select a country'));
+                return;
+            }
+
+            if (country === 'random') {
+                dom.content(container, E('div', { 'class': 'nym-mobile-gateway-placeholder' }, '🌐 Random gateway will be selected'));
+                return;
+            }
+
+            dom.content(container, E('div', { 'class': 'nym-mobile-gateway-placeholder' }, 'Loading gateways...'));
+
+            var gatewayType = type === 'entry' ? 'mixnet-entry' : 'mixnet-exit';
+            rpc.gatewayListByCountry(gatewayType, country).then(function(result) {
+                if (!result || !result.gateways || result.gateways.length === 0) {
+                    dom.content(container, E('div', { 'class': 'nym-mobile-gateway-placeholder' }, 'No gateways available'));
+                    return;
+                }
+
+                var sorted = result.gateways.slice().sort(function(a, b) {
+                    var scoreA = (a.performance || '').indexOf('High') >= 0 ? 3 :
+                                 (a.performance || '').indexOf('Medium') >= 0 ? 2 :
+                                 (a.performance || '').indexOf('Offline') >= 0 ? 0 : 1;
+                    var scoreB = (b.performance || '').indexOf('High') >= 0 ? 3 :
+                                 (b.performance || '').indexOf('Medium') >= 0 ? 2 :
+                                 (b.performance || '').indexOf('Offline') >= 0 ? 0 : 1;
+                    return scoreB - scoreA;
+                });
+
+                var inputName = type === 'entry' ? 'entry_gateway_id' : 'exit_gateway_id';
+                if (isBrowseOnly) inputName += '_browse';
+                var gatewayList = E('div', { 'class': 'nym-gateway-list' });
+
+                if (!isBrowseOnly) {
+                    var randomOption = E('label', { 'class': 'nym-gateway-option selected' }, [
+                        E('input', { 'type': 'radio', 'name': inputName, 'value': '', 'checked': 'checked' }),
+                        E('div', { 'class': 'nym-gateway-option-info' }, [
+                            E('div', { 'class': 'nym-gateway-option-name' }, '🎲 Any Gateway (Random)')
+                        ])
+                    ]);
+                    randomOption.addEventListener('click', function() {
+                        container.querySelectorAll('.nym-gateway-option').forEach(function(el) {
+                            el.classList.remove('selected');
+                        });
+                        randomOption.classList.add('selected');
+                    });
+                    gatewayList.appendChild(randomOption);
+                }
+
+                sorted.forEach(function(gw) {
+                    var perf = gw.performance || 'Unknown';
+                    var iconDiv = E('div', { 'class': 'nym-gateway-option-icon' });
+                    iconDiv.innerHTML = nymUI.getQualityIcon(perf, assets);
+
+                    var option = E('label', { 'class': 'nym-gateway-option' }, [
+                        E('input', { 'type': 'radio', 'name': inputName, 'value': gw.id || '' }),
+                        iconDiv,
+                        E('div', { 'class': 'nym-gateway-option-info' }, [
+                            E('div', { 'class': 'nym-gateway-option-name' }, gw.name || 'Unknown'),
+                            E('div', { 'class': 'nym-gateway-option-perf' }, perf)
+                        ])
+                    ]);
+                    if (!isBrowseOnly) {
+                        option.addEventListener('click', function() {
+                            container.querySelectorAll('.nym-gateway-option').forEach(function(el) {
+                                el.classList.remove('selected');
+                            });
+                            option.classList.add('selected');
+                        });
+                    }
+                    gatewayList.appendChild(option);
+                });
+
+                dom.content(container, [
+                    gatewayList,
+                    E('div', { 'style': 'font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;' },
+                        result.gateways.length + ' gateways available')
+                ]);
+            }).catch(function(err) {
+                dom.content(container, E('div', { 'class': 'nym-mobile-gateway-placeholder', 'style': 'color: var(--danger)' },
+                    'Error: ' + err.message));
+            });
+        };
+
         // Connection handlers
         var handleConnect = function() {
             if (statusHero) statusHero.className = 'nym-status-hero connecting';
             if (statusLabel) statusLabel.textContent = 'Connecting';
             if (actionBtn) actionBtn.disabled = true;
+            // Immediately show connecting animation on mobile
+            if (mobileGatewayTabs) {
+                mobileGatewayTabs.setConnecting();
+            }
 
-            // Get selected gateway settings
-            var entry_country = entryCountrySelect ? entryCountrySelect.value : 'none';
-            var exit_country = exitCountrySelect ? exitCountrySelect.value : 'none';
+            // Get selected gateway settings - check both desktop and mobile
+            var entry_country, exit_country, entry_id, exit_id;
+            var entryRadio, exitRadio;
 
-            // Get selected gateway IDs from radio buttons
-            var entryRadio = entryGatewayContainer ? entryGatewayContainer.querySelector('input[name="entry_gateway_id"]:checked') : null;
-            var exitRadio = exitGatewayContainer ? exitGatewayContainer.querySelector('input[name="exit_gateway_id"]:checked') : null;
-            var entry_id = entryRadio ? entryRadio.value : null;
-            var exit_id = exitRadio ? exitRadio.value : null;
+            // Check if mobile tabs are visible (mobile view)
+            var isMobileView = nymUI.isMobile();
+
+            if (isMobileView && mobileGatewayTabs) {
+                // Get from mobile tabs
+                var mobileEntrySelect = mobileGatewayTabs.getEntrySelect();
+                var mobileExitSelect = mobileGatewayTabs.getExitSelect();
+                var mobileEntryContainer = mobileGatewayTabs.getEntryGatewayContainer();
+                var mobileExitContainer = mobileGatewayTabs.getExitGatewayContainer();
+
+                entry_country = mobileEntrySelect ? mobileEntrySelect.value : 'none';
+                exit_country = mobileExitSelect ? mobileExitSelect.value : 'none';
+                entryRadio = mobileEntryContainer ? mobileEntryContainer.querySelector('input[name="entry_gateway_id"]:checked') : null;
+                exitRadio = mobileExitContainer ? mobileExitContainer.querySelector('input[name="exit_gateway_id"]:checked') : null;
+            } else {
+                // Get from desktop selectors
+                entry_country = entryCountrySelect ? entryCountrySelect.value : 'none';
+                exit_country = exitCountrySelect ? exitCountrySelect.value : 'none';
+                entryRadio = entryGatewayContainer ? entryGatewayContainer.querySelector('input[name="entry_gateway_id"]:checked') : null;
+                exitRadio = exitGatewayContainer ? exitGatewayContainer.querySelector('input[name="exit_gateway_id"]:checked') : null;
+            }
+
+            entry_id = entryRadio ? entryRadio.value : null;
+            exit_id = exitRadio ? exitRadio.value : null;
 
             var entry_random = false;
             var exit_random = false;
@@ -280,6 +418,10 @@ return view.extend({
             if (statusHero) statusHero.className = 'nym-status-hero disconnecting';
             if (statusLabel) statusLabel.textContent = 'Disconnecting';
             if (actionBtn) actionBtn.disabled = true;
+            // Immediately show disconnecting animation on mobile
+            if (mobileGatewayTabs) {
+                mobileGatewayTabs.setDisconnecting();
+            }
 
             rpc.disconnect().then(function(result) {
                 if (result && result.success) {
@@ -602,19 +744,37 @@ return view.extend({
             });
         };
 
-        // LAN policy handler
-        var handleLanPolicy = function(policy) {
-            rpc.lanSet(policy).then(function(result) {
-                if (result && result.success) {
-                    showToast('LAN policy set to: ' + policy, 'success');
-                    var display = document.getElementById('lan-policy-display');
-                    if (display) display.textContent = policy;
-                } else {
-                    showToast('Failed: ' + (result.error || 'Unknown'), 'error');
-                }
-            }).catch(function(err) {
-                showToast('Error: ' + err.message, 'error');
-            });
+        // DNS handler
+        var dnsServersInput;
+
+        var handleDnsSave = function() {
+            var servers = dnsServersInput ? dnsServersInput.value.trim() : '';
+
+            if (servers) {
+                // Has servers - set and enable
+                rpc.dnsSet(servers).then(function(result) {
+                    if (result && result.success) {
+                        return rpc.dnsEnable();
+                    } else {
+                        throw new Error(result.error || 'Failed to set DNS');
+                    }
+                }).then(function(result) {
+                    if (result && result.success) {
+                        showToast('Custom DNS saved', 'success');
+                    }
+                }).catch(function(err) {
+                    showToast('Error: ' + err.message, 'error');
+                });
+            } else {
+                // Empty - clear and use defaults
+                rpc.dnsSet('').then(function() {
+                    return rpc.dnsDisable();
+                }).then(function() {
+                    showToast('Using default DNS', 'success');
+                }).catch(function(err) {
+                    showToast('Error: ' + err.message, 'error');
+                });
+            }
         };
 
         // Check if logged in
@@ -683,7 +843,7 @@ return view.extend({
                     ])
                 ]),
 
-                // Gateway info display (shown when connected)
+                // Gateway info display (shown when connected) - Desktop
                 E('div', { 'class': 'nym-gateway-display' }, [
                     E('div', { 'class': 'nym-gateway-item' }, [
                         E('div', { 'class': 'nym-gateway-label' }, 'Entry'),
@@ -702,6 +862,18 @@ return view.extend({
                         ])
                     ])
                 ]),
+
+                // Mobile gateway tabs - unified interface (hidden on desktop, shown on mobile via CSS)
+                (function() {
+                    mobileGatewayTabs = nymUI.createMobileGatewayTabs({
+                        entryCountries: entry_countries,
+                        exitCountries: exit_countries,
+                        countryData: countries.data,
+                        getCountryDisplay: function(code) { return countries.getDisplay(code); },
+                        onCountryChange: loadMobileGateways
+                    });
+                    return mobileGatewayTabs.element;
+                })(),
 
                 // Action button - no initial click handler to avoid dual handlers
                 E('div', { 'class': 'nym-action-buttons' }, [
@@ -759,35 +931,37 @@ return view.extend({
         ]);
         container.appendChild(tunnelCard);
 
-        // Local Network Card
-        var lanCard = E('div', { 'class': 'nym-card' }, [
-            E('div', { 'class': 'nym-card-header', 'click': function() { toggleCard(lanCard); } }, [
+        // DNS Settings Card
+        var dnsCard = E('div', { 'class': 'nym-card' }, [
+            E('div', { 'class': 'nym-card-header', 'click': function() { toggleCard(dnsCard); } }, [
                 E('div', { 'class': 'nym-card-title' }, [
-                    E('div', { 'class': 'nym-card-icon' }, '🔒'),
-                    'Local Network'
+                    E('div', { 'class': 'nym-card-icon' }, '🌐'),
+                    'DNS Settings'
                 ]),
                 E('div', { 'class': 'nym-card-chevron' }, '▼')
             ]),
             E('div', { 'class': 'nym-card-body' }, [
-                E('div', { 'class': 'nym-card-description' },
-                    'Control whether local network devices can be accessed while connected to the VPN.'),
-                E('div', { 'class': 'nym-info-item', 'style': 'margin-bottom: 16px' }, [
-                    E('div', { 'class': 'nym-info-label' }, 'Current Policy'),
-                    E('div', { 'class': 'nym-info-value', 'id': 'lan-policy-display' }, lan_policy.policy || 'Not set')
+                E('div', { 'class': 'nym-form-group' }, [
+                    E('label', { 'class': 'nym-form-label' }, 'Custom DNS Servers'),
+                    dnsServersInput = E('input', {
+                        'class': 'nym-input',
+                        'type': 'text',
+                        'placeholder': '9.9.9.9 1.1.1.1',
+                        'value': dns_config.servers || ''
+                    }),
+                    E('div', { 'style': 'font-size: 11px; color: var(--text-muted); margin-top: 4px' },
+                        'Leave empty to use privacy-focused defaults')
                 ]),
-                E('div', { 'style': 'display: flex; gap: 12px; justify-content: center' }, [
+
+                E('div', { 'class': 'nym-text-center nym-mt-16' }, [
                     E('button', {
                         'class': 'nym-btn nym-btn-primary',
-                        'click': function() { handleLanPolicy('allow'); }
-                    }, 'Allow LAN'),
-                    E('button', {
-                        'class': 'nym-btn nym-btn-danger',
-                        'click': function() { handleLanPolicy('block'); }
-                    }, 'Block LAN')
+                        'click': handleDnsSave
+                    }, 'Save')
                 ])
             ])
         ]);
-        container.appendChild(lanCard);
+        container.appendChild(dnsCard);
 
         // Account Card
         var accountCard = E('div', { 'class': 'nym-card' }, [
@@ -968,6 +1142,15 @@ return view.extend({
                     status.exit_country,
                     countries.data);
                 buildConnectionChain(isTwoHopMode ? 2 : 5);
+
+                // Also set mobile tabs to connected state
+                if (mobileGatewayTabs) {
+                    mobileGatewayTabs.setConnected(
+                        { name: status.entry_name, id: status.entry_id, ip: status.entry_ip, country: status.entry_country },
+                        { name: status.exit_name, id: status.exit_id, ip: status.exit_ip, country: status.exit_country },
+                        isTwoHopMode ? 2 : 5
+                    );
+                }
 
                 actionBtn.textContent = 'Disconnect';
                 actionBtn.className = 'nym-btn nym-btn-danger';

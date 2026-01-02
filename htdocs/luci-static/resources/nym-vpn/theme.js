@@ -176,6 +176,9 @@ return baseclass.extend({
     .nym-account-id { background: var(--bg-input); padding: 12px 16px; border-radius: 8px; font-size: 12px; color: var(--text-secondary); word-break: break-all; margin-bottom: 16px; border: 1px solid var(--border-color); }\
     .nym-account-state { display: inline-block; padding: 6px 12px; background: var(--nym-green-dim); color: var(--nym-green); border-radius: 20px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }\
     .nym-account-actions { display: flex; justify-content: center; gap: 12px; }\
+    .nym-account-actions .nym-btn { padding: 12px 28px; font-size: 12px; min-width: 120px; }\
+    .nym-account-actions .nym-btn-secondary { background: transparent !important; color: var(--nym-green) !important; border: 1px solid var(--nym-green) !important; }\
+    .nym-account-actions .nym-btn-secondary:hover:not(:disabled) { background: var(--nym-green-dim) !important; box-shadow: 0 0 16px var(--nym-green-glow) !important; transform: translateY(-1px); }\
     .nym-footer { text-align: center; padding: 24px 0; border-top: 1px solid var(--border-color); margin-top: 24px; }\
     .nym-footer-info { display: flex; justify-content: center; gap: 32px; font-size: 12px; color: var(--text-muted); }\
     .nym-footer-item span { color: var(--text-secondary); }\
@@ -214,5 +217,151 @@ return baseclass.extend({
     .nym-daemon-status { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }\
     .nym-daemon-status.running { background: var(--nym-green-dim); color: var(--nym-green); }\
     .nym-daemon-status.stopped { background: var(--danger-dim); color: var(--danger); }\
+    /* Mobile Gateway Tabs - Unified Interface */\
+    .nym-mobile-gateway-tabs { display: none; }\
+    .nym-mobile-tabs { display: flex; gap: 0; background: var(--bg-input); border-radius: 12px; padding: 4px; margin-bottom: 16px; }\
+    .nym-mobile-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; background: transparent; border: none; border-radius: 10px; color: var(--text-muted); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.25s ease; text-transform: uppercase; letter-spacing: 1.5px; }\
+    .nym-mobile-tab:hover { color: var(--text-secondary); }\
+    .nym-mobile-tab.active { background: var(--nym-green); color: var(--bg-primary); box-shadow: 0 4px 16px var(--nym-green-glow); }\
+    .nym-mobile-tab-icon { font-size: 10px; opacity: 0.8; }\
+    .nym-mobile-tab-body { min-height: 120px; }\
+    .nym-mobile-tab-content { animation: mobileTabFade 0.2s ease; }\
+    @keyframes mobileTabFade { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }\
+    /* Selection Mode (Disconnected) */\
+    .nym-mobile-selection-mode { display: block; }\
+    .nym-mobile-select-section { margin-bottom: 16px; }\
+    .nym-mobile-select-section .nym-select { height: 48px; padding: 12px 40px 12px 16px; font-size: 15px; line-height: 1.4; }\
+    .nym-mobile-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 8px; }\
+    .nym-mobile-gateway-list-container { max-height: 200px; overflow-y: auto; }\
+    .nym-mobile-gateway-placeholder { color: var(--text-muted); font-size: 13px; font-style: italic; padding: 16px; text-align: center; }\
+    /* Connected Mode */\
+    .nym-mobile-connected-mode { display: none; }\
+    .nym-mobile-connected-section { text-align: center; padding: 16px 0; }\
+    .nym-mobile-connected-info { display: flex; flex-direction: column; align-items: center; gap: 12px; }\
+    .nym-mobile-connected-flag { font-size: 48px; line-height: 1; }\
+    .nym-mobile-connected-details { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }\
+    .nym-mobile-connected-name { font-size: 15px; color: var(--text-primary); font-weight: 500; text-align: center; max-width: 100%; word-break: break-word; line-height: 1.4; }\
+    .nym-mobile-connected-id { font-size: 10px; color: var(--text-secondary); font-family: "SF Mono", "Fira Code", monospace; text-align: center; max-width: 100%; word-break: break-all; line-height: 1.4; background: var(--bg-input); padding: 8px 14px; border-radius: 8px; }\
+    .nym-mobile-connected-ip { font-size: 13px; color: var(--nym-green); font-family: monospace; font-weight: 500; }\
+    .nym-mobile-connected-empty { font-size: 36px; color: var(--text-muted); padding: 24px 0; }\
+    /* Browse Toggle */\
+    .nym-mobile-browse-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 16px; margin-top: 16px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-secondary); font-size: 12px; font-family: inherit; cursor: pointer; transition: all 0.2s ease; }\
+    .nym-mobile-browse-toggle:hover { border-color: var(--border-accent); color: var(--text-primary); }\
+    .nym-mobile-browse-toggle.expanded { border-color: var(--nym-green); color: var(--nym-green); }\
+    .nym-mobile-browse-arrow { font-size: 10px; transition: transform 0.2s ease; }\
+    .nym-mobile-browse-toggle.expanded .nym-mobile-browse-arrow { transform: rotate(180deg); }\
+    /* Browse Section */\
+    .nym-mobile-browse-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color); overflow: hidden; max-height: 400px; transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease; }\
+    .nym-mobile-browse-section.collapsed { max-height: 0; opacity: 0; padding-top: 0; margin-top: 0; border-top: none; }\
+    .nym-mobile-browse-section .nym-select { height: 48px; padding: 12px 40px 12px 16px; font-size: 15px; line-height: 1.4; }\
+    .nym-mobile-browse-list { max-height: 180px; overflow-y: auto; margin-top: 12px; }\
+    /* Mobile Uptime Display */\
+    .nym-mobile-uptime { display: none; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 12px; }\
+    .nym-mobile-uptime-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }\
+    .nym-mobile-uptime-value { font-size: 28px; font-weight: 300; color: var(--text-primary); font-variant-numeric: tabular-nums; letter-spacing: 2px; }\
+    /* Mobile Connection Chain */\
+    .nym-mobile-chain { display: none; flex-direction: column; align-items: center; gap: 8px; padding: 16px 0; margin-bottom: 16px; transition: opacity 0.4s ease, transform 0.4s ease; opacity: 1; transform: scale(1); }\
+    .nym-mobile-chain.fade-out { opacity: 0; transform: scale(0.95); }\
+    .nym-mobile-chain-row { display: flex; align-items: center; justify-content: center; gap: 6px; }\
+    .nym-mobile-chain-node { width: 12px; height: 12px; border-radius: 50%; background: var(--nym-green); box-shadow: 0 0 8px var(--nym-green-glow); transition: background 0.3s ease, box-shadow 0.3s ease; }\
+    .nym-mobile-chain-node.mixnet { width: 10px; height: 10px; opacity: 0.6; }\
+    .nym-mobile-chain-line { width: 20px; height: 2px; background: repeating-linear-gradient(90deg, var(--nym-green) 0px, var(--nym-green) 3px, transparent 3px, transparent 6px); background-size: 200% 100%; opacity: 0.5; animation: chain-flow 4s linear infinite; transition: background 0.3s ease; }\
+    .nym-mobile-chain-line.long { width: 100px; }\
+    .nym-mobile-chain-label { font-size: 11px; color: var(--nym-green); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500; transition: color 0.3s ease; }\
+    .nym-mobile-chain-label .dots { letter-spacing: 0; }\
+    /* Connecting state - orange */\
+    .nym-mobile-chain.connecting { animation: chain-fade-in 0.4s ease; }\
+    .nym-mobile-chain.connecting .nym-mobile-chain-node { background: var(--warning); box-shadow: 0 0 8px rgba(255, 165, 2, 0.5); animation: pulse-node 1s ease-in-out infinite; }\
+    .nym-mobile-chain.connecting .nym-mobile-chain-line { background: repeating-linear-gradient(90deg, var(--warning) 0px, var(--warning) 3px, transparent 3px, transparent 6px); animation: chain-flow 2s linear infinite; }\
+    .nym-mobile-chain.connecting .nym-mobile-chain-label { color: var(--warning); }\
+    /* Disconnecting state - orange */\
+    .nym-mobile-chain.disconnecting .nym-mobile-chain-node { background: var(--warning); box-shadow: 0 0 8px rgba(255, 165, 2, 0.5); animation: pulse-node 1s ease-in-out infinite; }\
+    .nym-mobile-chain.disconnecting .nym-mobile-chain-line { background: repeating-linear-gradient(90deg, var(--warning) 0px, var(--warning) 3px, transparent 3px, transparent 6px); animation: chain-flow 2s linear infinite reverse; }\
+    .nym-mobile-chain.disconnecting .nym-mobile-chain-label { color: var(--warning); }\
+    @keyframes chain-fade-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }\
+    @keyframes pulse-node { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; } }\
+    /* Enhanced Mobile Breakpoints */\
+    @media (max-width: 768px) {\
+        .nym-container { padding: 16px; }\
+        .nym-header { padding: 24px 0 32px; margin-bottom: 24px; }\
+        .nym-logo svg { height: 32px; }\
+        .nym-subtitle { font-size: 12px; }\
+        .nym-status-hero { padding: 32px 20px; border-radius: 14px; }\
+        .nym-status-ring { width: 130px; height: 130px; margin-bottom: 24px; }\
+        .nym-status-ring-inner { width: 114px; height: 114px; top: 8px; left: 8px; }\
+        .nym-status-label { font-size: 12px; letter-spacing: 1.5px; }\
+        .nym-uptime { font-size: 24px; }\
+        .nym-uptime-label { font-size: 10px; }\
+        /* Hide desktop gateway panels and display on mobile */\
+        .nym-gateway-display { display: none !important; }\
+        .nym-hero-gateway-row { display: none !important; }\
+        /* Show mobile gateway tabs */\
+        .nym-mobile-gateway-tabs { display: block !important; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color); }\
+        /* Gateway selection panels - full width stack */\
+        .nym-hero-gateway-row { flex-direction: column; align-items: stretch; gap: 16px; }\
+        .nym-hero-gateway-panel { max-width: 100%; width: 100%; padding: 16px; }\
+        .nym-hero-center { order: -1; margin-bottom: 20px; padding: 0; }\
+        .nym-hero-gateway-panel .nym-gateway-box-title { font-size: 10px; margin-bottom: 12px; }\
+        .nym-hero-gateway-panel .nym-select { font-size: 14px; height: 48px; line-height: 48px; }\
+        .nym-hero-gateway-panel .nym-gateway-list { max-height: 180px; }\
+        .nym-hero-gateway-panel .nym-gateway-option { padding: 12px 14px; }\
+        .nym-hero-gateway-panel .nym-gateway-option-name { font-size: 13px; }\
+        /* Action buttons */\
+        .nym-action-buttons { margin-top: 24px; }\
+        .nym-btn { padding: 16px 32px; font-size: 14px; width: 100%; }\
+        /* Cards */\
+        .nym-card { border-radius: 10px; }\
+        .nym-card-header { padding: 14px 16px; }\
+        .nym-card-title { font-size: 13px; gap: 10px; }\
+        .nym-card-icon { width: 28px; height: 28px; font-size: 14px; }\
+        .nym-card-body { padding: 0 16px 16px; }\
+        .nym-card-description { font-size: 11px; }\
+        /* Toggle rows */\
+        .nym-toggle-row { padding: 14px 0; flex-wrap: wrap; gap: 12px; }\
+        .nym-toggle-title { font-size: 13px; }\
+        .nym-toggle-desc { font-size: 11px; }\
+        /* Account */\
+        .nym-account-id { font-size: 11px; padding: 10px 14px; }\
+        .nym-account-actions { flex-direction: column; gap: 10px; }\
+        .nym-account-actions .nym-btn { width: 100%; }\
+        /* Footer */\
+        .nym-footer { padding: 20px 0; margin-top: 20px; }\
+        .nym-footer-info { flex-direction: column; gap: 8px; font-size: 11px; }\
+        /* Toast positioning */\
+        .nym-toast-container { top: auto; bottom: 20px; right: 16px; left: 16px; max-width: none; }\
+        .nym-toast { padding: 12px 14px; }\
+        /* Modal */\
+        .nym-modal { padding: 32px 24px; max-width: 90%; }\
+        .nym-modal-ring { width: 100px; height: 100px; margin-bottom: 20px; }\
+        .nym-modal-ring-inner { width: 84px; height: 84px; }\
+        .nym-modal-icon { font-size: 28px; }\
+        .nym-modal-title { font-size: 16px; }\
+        .nym-modal-message { font-size: 12px; }\
+        .nym-modal-buttons { flex-direction: column; gap: 10px; }\
+        .nym-modal-buttons .nym-btn { width: 100%; min-width: auto; }\
+    }\
+    /* Small phones */\
+    @media (max-width: 400px) {\
+        .nym-container { padding: 12px; }\
+        .nym-status-hero { padding: 24px 16px; }\
+        .nym-status-ring { width: 110px; height: 110px; }\
+        .nym-status-ring-inner { width: 96px; height: 96px; top: 7px; left: 7px; }\
+        .nym-status-label { font-size: 11px; }\
+        .nym-uptime { font-size: 20px; }\
+        .nym-hero-gateway-panel { padding: 14px; }\
+        .nym-mobile-tab { padding: 12px 16px; font-size: 12px; }\
+        .nym-mobile-gateway-flag { font-size: 36px; }\
+        .nym-mobile-gateway-name { font-size: 13px; }\
+        .nym-mobile-gateway-id { font-size: 9px; padding: 5px 10px; }\
+    }\
+    /* Landscape mobile */\
+    @media (max-width: 768px) and (orientation: landscape) {\
+        .nym-status-hero { padding: 20px; }\
+        .nym-hero-gateway-row { flex-direction: row; flex-wrap: wrap; }\
+        .nym-hero-center { order: 0; flex: 1 1 100%; margin-bottom: 16px; }\
+        .nym-hero-gateway-panel { flex: 1 1 calc(50% - 8px); max-width: calc(50% - 8px); }\
+        .nym-status-ring { width: 100px; height: 100px; margin-bottom: 16px; }\
+        .nym-status-ring-inner { width: 86px; height: 86px; top: 7px; left: 7px; }\
+    }\
 '
 });
