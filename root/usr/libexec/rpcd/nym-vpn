@@ -773,6 +773,15 @@ handle_daemon_restart() {
     json_dump
 }
 
+handle_logs_get() {
+    # Get last 200 nym-vpn related log entries from syslog
+    local logs=$(logread 2>/dev/null | grep -iE 'nym-vpn|nym_vpn|nym-vpnd' | tail -n 200)
+
+    json_init
+    json_add_string "logs" "$logs"
+    json_dump
+}
+
 #-------------------------------------------------------------------------------
 # Main entry point
 #-------------------------------------------------------------------------------
@@ -812,7 +821,8 @@ case "$1" in
     "dns_disable": {},
     "dns_get_default": {},
     "daemon_status": {},
-    "daemon_restart": {}
+    "daemon_restart": {},
+    "logs_get": {}
 }
 EOF
         ;;
@@ -842,6 +852,7 @@ EOF
             dns_get_default)         handle_dns_get_default ;;
             daemon_status)           handle_daemon_status ;;
             daemon_restart)          handle_daemon_restart ;;
+            logs_get)                handle_logs_get ;;
             *)
                 json_init
                 json_add_boolean "success" 0

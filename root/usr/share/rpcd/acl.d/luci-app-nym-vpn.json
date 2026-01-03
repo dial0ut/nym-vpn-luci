@@ -15,7 +15,8 @@
           "network_get",
           "dns_get",
           "dns_get_default",
-          "daemon_status"
+          "daemon_status",
+          "logs_get"
         ],
         "service": [
           "list"

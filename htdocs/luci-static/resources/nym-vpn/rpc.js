@@ -133,5 +133,11 @@ return baseclass.extend({
         object: 'nym-vpn',
         method: 'daemon_restart',
         params: []
+    }),
+
+    logsGet: rpc.declare({
+        object: 'nym-vpn',
+        method: 'logs_get',
+        params: []
     })
 });

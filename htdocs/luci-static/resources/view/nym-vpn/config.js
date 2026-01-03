@@ -1061,6 +1061,94 @@ return view.extend({
             });
         };
 
+        // View logs handler
+        var handleViewLogs = function() {
+            showModal('Loading Logs', 'Fetching daemon logs...');
+
+            rpc.logsGet().then(function(result) {
+                hideModal();
+
+                var logs = (result && result.logs) || '';
+                var lines = logs.split('\n').filter(function(l) { return l.trim(); });
+                var rawLogs = lines.join('\n');
+
+                // Create overlay
+                var logsOverlay = E('div', {
+                    'style': 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(4px); animation: modalFadeIn 0.3s ease;'
+                });
+
+                // Create modal container
+                var logsModal = E('div', {
+                    'style': 'background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; width: 90%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);'
+                }, [
+                    // Header
+                    E('div', {
+                        'style': 'display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary);'
+                    }, [
+                        E('div', {
+                            'style': 'display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; color: var(--text-primary);'
+                        }, [
+                            E('span', {}, '🛠'),
+                            E('span', {}, 'Daemon Logs')
+                        ]),
+                        E('button', {
+                            'style': 'background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s;',
+                            'click': function() { logsOverlay.remove(); }
+                        }, '✕')
+                    ]),
+                    // Body
+                    E('div', {
+                        'style': 'flex: 1; overflow-y: auto; padding: 16px; background: var(--bg-input); min-height: 300px; max-height: 50vh;'
+                    }, [
+                        E('pre', {
+                            'style': 'margin: 0; font-family: "SF Mono", "Fira Code", "JetBrains Mono", monospace; font-size: 11px; line-height: 1.7; color: var(--text-secondary); white-space: pre-wrap; word-break: break-all;'
+                        }, lines.length > 0 ? rawLogs : 'No logs found')
+                    ]),
+                    // Footer
+                    E('div', {
+                        'style': 'display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-top: 1px solid var(--border-color); background: var(--bg-secondary);'
+                    }, [
+                        E('span', {
+                            'style': 'font-size: 12px; color: var(--text-muted);'
+                        }, lines.length + ' log entries'),
+                        E('div', { 'style': 'display: flex; gap: 10px;' }, [
+                            E('button', {
+                                'class': 'nym-btn nym-btn-primary nym-btn-small',
+                                'click': function() {
+                                    if (navigator.clipboard && rawLogs) {
+                                        navigator.clipboard.writeText(rawLogs).then(function() {
+                                            showToast('Logs copied to clipboard', 'success');
+                                        }).catch(function() {
+                                            showToast('Failed to copy', 'error');
+                                        });
+                                    }
+                                }
+                            }, 'Copy'),
+                            E('button', {
+                                'class': 'nym-btn nym-btn-primary nym-btn-small',
+                                'click': function() {
+                                    logsOverlay.remove();
+                                    handleViewLogs();
+                                }
+                            }, 'Refresh')
+                        ])
+                    ])
+                ]);
+
+                logsOverlay.appendChild(logsModal);
+                document.body.appendChild(logsOverlay);
+
+                // Click outside to close
+                logsOverlay.addEventListener('click', function(e) {
+                    if (e.target === logsOverlay) logsOverlay.remove();
+                });
+
+            }).catch(function(err) {
+                hideModal();
+                showToast('Failed to load logs: ' + err.message, 'error');
+            });
+        };
+
         // Update daemon status display
         var updateDaemonStatus = function() {
             return rpc.daemonStatus().then(function(result) {
@@ -1098,11 +1186,9 @@ return view.extend({
                         }, daemon_status.running ? 'Running' : 'Stopped')
                     ])
                 ]),
-                E('div', { 'class': 'nym-text-center nym-mt-16' }, [
-                    E('button', {
-                        'class': 'nym-btn nym-btn-danger',
-                        'click': handleDaemonRestart
-                    }, 'Restart Daemon')
+                E('div', { 'class': 'nym-account-actions', 'style': 'margin-top: 16px' }, [
+                    E('button', { 'class': 'nym-btn nym-btn-secondary', 'click': handleViewLogs }, 'View Logs'),
+                    E('button', { 'class': 'nym-btn nym-btn-danger', 'click': handleDaemonRestart }, 'Restart Daemon')
                 ])
             ])
         ]);

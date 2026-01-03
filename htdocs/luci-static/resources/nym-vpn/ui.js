@@ -596,6 +596,8 @@ return baseclass.extend({
         var ensureContainer = function() {
             if (!toastContainer || !toastContainer.parentNode) {
                 toastContainer = E('div', { 'class': 'nym-toast-container' });
+                // Apply styles directly to override any CSS
+                toastContainer.style.cssText = 'position: fixed !important; top: 20px !important; bottom: unset !important; right: 20px !important; left: auto !important; z-index: 10001 !important; display: flex; flex-direction: column; gap: 10px;';
                 document.body.appendChild(toastContainer);
             }
             return toastContainer;

@@ -217,6 +217,20 @@ return baseclass.extend({
     .nym-daemon-status { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }\
     .nym-daemon-status.running { background: var(--nym-green-dim); color: var(--nym-green); }\
     .nym-daemon-status.stopped { background: var(--danger-dim); color: var(--danger); }\
+    /* Logs Modal */\
+    .nym-logs-modal { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; width: 90%; max-width: 700px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }\
+    .nym-logs-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }\
+    .nym-logs-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; color: var(--text-primary); }\
+    .nym-logs-close { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; }\
+    .nym-logs-close:hover { color: var(--text-primary); background: var(--bg-secondary); }\
+    .nym-logs-body { flex: 1; overflow-y: auto; padding: 16px 20px; min-height: 200px; max-height: 50vh; }\
+    .nym-logs-content { font-family: "SF Mono", "Fira Code", "JetBrains Mono", monospace; font-size: 11px; line-height: 1.6; }\
+    .nym-log-line { padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); word-break: break-all; }\
+    .nym-log-line:nth-child(odd) { background: var(--bg-secondary); }\
+    .nym-log-line:hover { background: var(--bg-input); color: var(--text-primary); }\
+    .nym-log-empty { color: var(--text-muted); font-style: italic; text-align: center; padding: 32px; }\
+    .nym-logs-footer { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }\
+    .nym-logs-count { font-size: 12px; color: var(--text-muted); }\
     /* Mobile Gateway Tabs - Unified Interface */\
     .nym-mobile-gateway-tabs { display: none; }\
     .nym-mobile-tabs { display: flex; gap: 0; background: var(--bg-input); border-radius: 12px; padding: 4px; margin-bottom: 16px; }\
@@ -328,7 +342,7 @@ return baseclass.extend({
         .nym-footer { padding: 20px 0; margin-top: 20px; }\
         .nym-footer-info { flex-direction: column; gap: 8px; font-size: 11px; }\
         /* Toast positioning */\
-        .nym-toast-container { top: auto; bottom: 20px; right: 16px; left: 16px; max-width: none; }\
+        .nym-toast-container { top: 20px !important; bottom: auto !important; right: 16px; left: 16px; max-width: none; }\
         .nym-toast { padding: 12px 14px; }\
         /* Modal */\
         .nym-modal { padding: 32px 24px; max-width: 90%; }\
